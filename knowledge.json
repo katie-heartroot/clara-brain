@@ -189,8 +189,8 @@
       ],
       "created": "2026-02-15T00:00:00.000000"
     },
-    "Pottery-Wheel": {
-      "name": "Pottery-Wheel",
+    "My-Pottery-Wheel": {
+      "name": "My-Pottery-Wheel",
       "entity_type": "Equipment",
       "observations": [
         "Katie's new pottery wheel \u2014 set up in her living space",
@@ -900,7 +900,7 @@
     {
       "from_entity": "Katie-Tudor",
       "relation_type": "owns",
-      "to_entity": "Pottery-Wheel",
+      "to_entity": "My-Pottery-Wheel",
       "created": "2026-02-14T00:00:00.000000"
     },
     {
@@ -1229,7 +1229,7 @@
     },
     {
       "from_entity": "Image-img-katie-wheel",
-      "to_entity": "Pottery-Wheel",
+      "to_entity": "My-Pottery-Wheel",
       "relation_type": "related_to",
       "created": "2026-02-15T08:00:00.000000"
     },
@@ -1253,7 +1253,7 @@
     },
     {
       "from_entity": "Image-img-katie-centering",
-      "to_entity": "Pottery-Wheel",
+      "to_entity": "My-Pottery-Wheel",
       "relation_type": "related_to",
       "created": "2026-02-15T08:00:00.000000"
     },
@@ -1277,7 +1277,7 @@
     },
     {
       "from_entity": "Image-img-katie-setup",
-      "to_entity": "Pottery-Wheel",
+      "to_entity": "My-Pottery-Wheel",
       "relation_type": "related_to",
       "created": "2026-02-15T08:00:00.000000"
     },
@@ -1301,7 +1301,7 @@
     },
     {
       "from_entity": "Image-img-katie-working",
-      "to_entity": "Pottery-Wheel",
+      "to_entity": "My-Pottery-Wheel",
       "relation_type": "related_to",
       "created": "2026-02-15T08:00:00.000000"
     },
@@ -1529,7 +1529,7 @@
     },
     {
       "from_entity": "Image-img-ryan-studio",
-      "to_entity": "Pottery-Wheel",
+      "to_entity": "My-Pottery-Wheel",
       "relation_type": "related_to",
       "created": "2026-02-15T08:00:00.000000"
     },
@@ -1619,7 +1619,7 @@
     },
     {
       "from_entity": "Ryan",
-      "to_entity": "Pottery-Wheel",
+      "to_entity": "My-Pottery-Wheel",
       "relation_type": "left_for_katie",
       "created": "2026-02-15T10:58:55.980418"
     },
@@ -1632,6 +1632,30 @@
       "from_entity": "Ryan",
       "to_entity": "White-Lake",
       "relation_type": "works_from"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "to_entity": "Vine-and-Hearth",
+      "relation_type": "created",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Ryan",
+      "to_entity": "Vine-and-Hearth",
+      "relation_type": "shaped",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Life-Planning-System",
+      "to_entity": "White-Lake",
+      "relation_type": "located_in",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Ryan",
+      "to_entity": "Life-Planning-System",
+      "relation_type": "designed",
+      "created": "2026-02-15T00:00:00.000000"
     }
   ],
   "last_sync": "2026-02-15T08:00:00.000000"

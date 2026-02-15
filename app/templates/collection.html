@@ -587,5 +587,51 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 </script>
+
+    <!-- ── Session Security ── -->
+    <style>
+    .quick-lock{position:fixed;top:12px;right:12px;z-index:9999;width:36px;height:36px;border-radius:50%;background:rgba(44,44,40,0.7);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .3s;backdrop-filter:blur(4px)}
+    .quick-lock:hover{background:rgba(163,74,40,0.8);color:#fff;border-color:rgba(196,133,76,0.5)}
+    </style>
+    <button class="quick-lock" onclick="claraLock()" title="Lock">&#x1f512;</button>
+    <script>
+    (function(){
+        const HEARTBEAT_MS = 120000;
+        const INACTIVITY_MS = 600000;
+        const BG_TIMEOUT_MS = 120000;
+        let lastActivity = Date.now();
+        let bgTimer = null;
+
+        function goDecoy(){ window.location.replace('/'); }
+
+        window.claraLock = function(){
+            fetch('/auth/lock',{method:'POST',credentials:'same-origin'})
+            .finally(goDecoy);
+        };
+
+        setInterval(function(){
+            fetch('/auth/heartbeat',{method:'POST',credentials:'same-origin'})
+            .then(r=>{if(!r.ok)goDecoy();})
+            .catch(()=>{});
+        }, HEARTBEAT_MS);
+
+        ['mousemove','keydown','touchstart','scroll'].forEach(function(evt){
+            document.addEventListener(evt, function(){lastActivity=Date.now();}, {passive:true});
+        });
+        setInterval(function(){
+            if(Date.now()-lastActivity > INACTIVITY_MS) window.claraLock();
+        }, 30000);
+
+        document.addEventListener('visibilitychange', function(){
+            if(document.hidden){
+                bgTimer = setTimeout(function(){window.claraLock();}, BG_TIMEOUT_MS);
+            } else {
+                if(bgTimer){clearTimeout(bgTimer);bgTimer=null;}
+                fetch('/auth/heartbeat',{method:'POST',credentials:'same-origin'})
+                .then(r=>{if(!r.ok)goDecoy();});
+            }
+        });
+    })();
+    </script>
 </body>
 </html>

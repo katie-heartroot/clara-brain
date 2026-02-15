@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hearth</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --deep-leaf: #2d5a3d;
+            --new-growth: #6b9e78;
+            --spring-mist: #dae8d8;
+            --kiln-gold: #c4854c;
+            --warm-clay: #d4a574;
+            --linen: #f7f4ef;
+            --parchment: #ede8df;
+            --rich-soil: #2c2c28;
+            --weathered-stone: #7a7a72;
+            --ember: #a34a28;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Lora', serif;
+            background: var(--rich-soil);
+            color: var(--spring-mist);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            background-image:
+                radial-gradient(ellipse at 20% 80%, rgba(45, 90, 61, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(196, 133, 76, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(107, 158, 120, 0.05) 0%, transparent 60%);
+        }
+
+        /* ── Ambient glow ── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(196, 133, 76, 0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .hearth-container {
+            position: relative;
+            z-index: 1;
+            width: 90%;
+            max-width: 380px;
+            padding: 48px 32px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            backdrop-filter: blur(24px) saturate(1.2);
+            -webkit-backdrop-filter: blur(24px) saturate(1.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* ── Ember icon ── */
+        .ember-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 24px;
+            opacity: 0.7;
+        }
+        .ember-icon svg {
+            width: 100%; height: 100%;
+        }
+
+        .greeting {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            font-weight: 300;
+            color: var(--warm-clay);
+            margin-bottom: 8px;
+            letter-spacing: 0.02em;
+        }
+
+        .subtext {
+            font-size: 0.85rem;
+            color: var(--weathered-stone);
+            margin-bottom: 32px;
+            font-style: italic;
+        }
+
+        /* ── Form elements ── */
+        .auth-step {
+            display: none;
+            animation: fadeUp 0.4s ease;
+        }
+        .auth-step.active {
+            display: block;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .field-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .field-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--spring-mist);
+            font-family: 'Lora', serif;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .field-group input::placeholder {
+            color: rgba(255,255,255,0.2);
+            font-style: italic;
+        }
+        .field-group input:focus {
+            border-color: var(--kiln-gold);
+            background: rgba(255,255,255,0.08);
+            box-shadow: 0 0 16px rgba(196, 133, 76, 0.15);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: rgba(45, 90, 61, 0.6);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--spring-mist);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .submit-btn:hover {
+            background: rgba(53, 105, 74, 0.7);
+            border-color: var(--kiln-gold);
+            box-shadow: 0 4px 16px rgba(196, 133, 76, 0.2);
+        }
+        .submit-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ── Trust device checkbox ── */
+        .trust-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 0.82rem;
+            color: var(--weathered-stone);
+        }
+        .trust-row input[type="checkbox"] {
+            accent-color: var(--kiln-gold);
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ── Status messages ── */
+        .status {
+            margin-top: 16px;
+            font-size: 0.82rem;
+            min-height: 20px;
+            transition: color 0.3s;
+        }
+        .status.error { color: var(--ember); }
+        .status.success { color: var(--new-growth); }
+        .status.info { color: var(--weathered-stone); }
+
+        /* ── SMS code input ── */
+        .code-input {
+            letter-spacing: 0.5em;
+            text-align: center;
+            font-size: 1.4rem;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        /* ── Loading spinner ── */
+        .loading {
+            display: none;
+            margin: 16px auto;
+        }
+        .loading.active {
+            display: block;
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: var(--kiln-gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── Locked out state ── */
+        .locked-message {
+            display: none;
+            text-align: center;
+            padding: 32px;
+        }
+        .locked-message h2 {
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--ember);
+            font-weight: 300;
+            margin-bottom: 12px;
+        }
+        .locked-message p {
+            color: var(--weathered-stone);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="hearth-container">
+        <!-- Ember / hearth icon -->
+        <div class="ember-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 4C24 4 16 14 16 24C16 28 18 32 24 36C30 32 32 28 32 24C32 14 24 4 24 4Z"
+                      fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                      style="color: var(--kiln-gold); opacity: 0.6"/>
+                <path d="M24 12C24 12 20 18 20 24C20 27 22 30 24 32C26 30 28 27 28 24C28 18 24 12 24 12Z"
+                      fill="currentColor" style="color: var(--kiln-gold); opacity: 0.25"/>
+                <line x1="24" y1="36" x2="24" y2="44" stroke="currentColor"
+                      stroke-width="1" style="color: var(--weathered-stone); opacity: 0.3"/>
+            </svg>
+        </div>
+
+        <div class="greeting">Welcome home</div>
+        <div class="subtext">It's good to see you, Katie.</div>
+
+        <!-- Step 1: Passphrase -->
+        <div id="step-passphrase" class="auth-step active">
+            <form id="passphrase-form" autocomplete="off">
+                <div class="field-group">
+                    <input type="password"
+                           id="passphrase"
+                           name="hearth-key"
+                           placeholder="speak the words..."
+                           autocomplete="new-password"
+                           autocorrect="off"
+                           autocapitalize="off"
+                           spellcheck="false"
+                           data-form-type="other"
+                           required>
+                </div>
+                <button type="submit" class="submit-btn" id="passphrase-btn">Enter</button>
+            </form>
+            <div class="loading" id="loading-1"><div class="spinner"></div></div>
+            <div class="status" id="status-1"></div>
+        </div>
+
+        <!-- Step 2: SMS verification -->
+        <div id="step-sms" class="auth-step">
+            <p style="font-size: 0.85rem; color: var(--weathered-stone); margin-bottom: 20px;">
+                I sent a code to your phone.
+            </p>
+            <form id="sms-form" autocomplete="off">
+                <div class="field-group">
+                    <input type="text"
+                           id="sms-code"
+                           name="hearth-code"
+                           class="code-input"
+                           placeholder="• • • • • •"
+                           maxlength="6"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           autocomplete="one-time-code"
+                           required>
+                </div>
+                <div class="trust-row">
+                    <input type="checkbox" id="trust-device" checked>
+                    <label for="trust-device">Remember this device</label>
+                </div>
+                <button type="submit" class="submit-btn" id="verify-btn">Verify</button>
+            </form>
+            <div class="loading" id="loading-2"><div class="spinner"></div></div>
+            <div class="status" id="status-2"></div>
+        </div>
+
+        <!-- Locked out -->
+        <div class="locked-message" id="locked-state">
+            <h2>Too many attempts</h2>
+            <p>Please wait a while and try again.</p>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // Scrub this page from browser history immediately
+        history.replaceState(null, '', location.pathname);
+
+        const $  = id => document.getElementById(id);
+        const stepPassphrase = $('step-passphrase');
+        const stepSms        = $('step-sms');
+        const lockedState    = $('locked-state');
+
+        let sessionKey = null;
+
+        function showStep(step) {
+            [stepPassphrase, stepSms, lockedState].forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
+            step.style.display = 'block';
+            // Trigger reflow for animation
+            void step.offsetWidth;
+            step.classList.add('active');
+        }
+
+        function setStatus(el, msg, type) {
+            el.textContent = msg;
+            el.className = 'status ' + (type || '');
+        }
+
+        function setLoading(id, on) {
+            $(id).classList.toggle('active', on);
+        }
+
+        // ── Check for trusted device (auto-send code) ──
+        function checkTrustedDevice() {
+            fetch('/auth/send-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+                credentials: 'same-origin'
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok && data.session_key) {
+                    sessionKey = data.session_key;
+                    showStep(stepSms);
+                    $('sms-code').focus();
+                }
+                // If not trusted, stay on passphrase step (default)
+            })
+            .catch(() => {});
+        }
+
+        // ── Step 1: Passphrase ──
+        $('passphrase-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const passphrase = $('passphrase').value.trim();
+            if (!passphrase) return;
+
+            const btn = $('passphrase-btn');
+            btn.disabled = true;
+            setLoading('loading-1', true);
+            setStatus($('status-1'), '', '');
+
+            fetch('/auth/passphrase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ passphrase: passphrase }),
+                credentials: 'same-origin'
+            })
+            .then(r => r.json().then(data => ({ status: r.status, data })))
+            .then(({ status, data }) => {
+                setLoading('loading-1', false);
+                btn.disabled = false;
+
+                if (status === 429) {
+                    showStep(lockedState);
+                    return;
+                }
+                if (data.ok && data.step === 'sms') {
+                    sessionKey = data.session_key;
+                    showStep(stepSms);
+                    $('sms-code').focus();
+                } else if (data.ok && data.step === 'done') {
+                    // SMS not configured — passphrase alone was enough
+                    window.location.href = '/';
+                } else {
+                    const msg = data.remaining !== undefined && data.remaining <= 2
+                        ? `That's not right. ${data.remaining} attempt${data.remaining !== 1 ? 's' : ''} left.`
+                        : "That's not quite it.";
+                    setStatus($('status-1'), msg, 'error');
+                    $('passphrase').value = '';
+                    $('passphrase').focus();
+                }
+            })
+            .catch(err => {
+                setLoading('loading-1', false);
+                btn.disabled = false;
+                setStatus($('status-1'), 'Something went wrong.', 'error');
+            });
+        });
+
+        // ── Step 2: SMS code ──
+        $('sms-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const code = $('sms-code').value.trim();
+            if (!code || code.length < 6) return;
+
+            const btn = $('verify-btn');
+            btn.disabled = true;
+            setLoading('loading-2', true);
+            setStatus($('status-2'), '', '');
+
+            fetch('/auth/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_key: sessionKey,
+                    code: code,
+                    trust: $('trust-device').checked
+                }),
+                credentials: 'same-origin'
+            })
+            .then(r => r.json().then(data => ({ status: r.status, data })))
+            .then(({ status, data }) => {
+                setLoading('loading-2', false);
+                btn.disabled = false;
+
+                if (status === 429) {
+                    showStep(lockedState);
+                    return;
+                }
+                if (data.ok && data.step === 'done') {
+                    window.location.href = '/';
+                } else {
+                    setStatus($('status-2'), 'Code didn\'t match. Check your phone and try again.', 'error');
+                    $('sms-code').value = '';
+                    $('sms-code').focus();
+                }
+            })
+            .catch(err => {
+                setLoading('loading-2', false);
+                btn.disabled = false;
+                setStatus($('status-2'), 'Something went wrong.', 'error');
+            });
+        });
+
+        // ── Auto-submit when 6 digits entered ──
+        $('sms-code').addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value.length === 6) {
+                $('sms-form').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // ── On load: check for trusted device ──
+        checkTrustedDevice();
+
+        // Focus passphrase field
+        $('passphrase').focus();
+    })();
+    </script>
+</body>
+</html>
