@@ -532,6 +532,10 @@
                 </select>
             </div>
             <div class="control-row">
+                <label>Image size</label>
+                <input type="range" min="16" max="80" value="36" step="2" oninput="setImageSize(+this.value)">
+            </div>
+            <div class="control-row">
                 <label>Fan hover</label>
                 <input type="checkbox" onchange="toggleFanHover(this.checked)">
             </div>
@@ -552,6 +556,7 @@
     var selectedId = null;
     var hoveredNodeId = null;
     var sim = null;
+    var imgSize = 36; // half-size of image squares
 
     // Controls state
     var edgeOpacity = 0.25;
@@ -766,6 +771,45 @@
 
     function toggleFanHover(on) { fanHover = on; }
 
+    function setImageSize(v) {
+        imgSize = v;
+        // Update all Image node elements
+        d3.selectAll('.node-rect, .node-rect-border').each(function() {
+            var el = d3.select(this);
+            var d = el.datum ? el.datum() : d3.select(this.parentNode).datum();
+            if (!d || d.type !== 'Image' || !d.thumbnail_url) return;
+            el.attr('x', -imgSize).attr('y', -imgSize)
+              .attr('width', imgSize * 2).attr('height', imgSize * 2);
+        });
+        d3.selectAll('.node-img').each(function() {
+            var d = d3.select(this.parentNode).datum();
+            if (!d || d.type !== 'Image' || !d.thumbnail_url) return;
+            d3.select(this)
+              .attr('x', -imgSize).attr('y', -imgSize)
+              .attr('width', imgSize * 2).attr('height', imgSize * 2);
+        });
+        // Update clip path rects
+        d3.selectAll('clipPath[id^="clip-img-"] rect').each(function() {
+            d3.select(this)
+              .attr('x', -imgSize).attr('y', -imgSize)
+              .attr('width', imgSize * 2).attr('height', imgSize * 2);
+        });
+        // Update labels
+        d3.selectAll('text').each(function() {
+            var d = d3.select(this.parentNode).datum();
+            if (!d) return;
+            var dy = (d.type === 'Image' && d.thumbnail_url) ? imgSize + 13 : rad(d) + 13;
+            d3.select(this).attr('dy', dy);
+        });
+        // Update collide force
+        if (sim) {
+            sim.force('collide').radius(function(d) {
+                return (d.type === 'Image' && d.thumbnail_url) ? imgSize + 8 : rad(d) + 8;
+            });
+            sim.alpha(0.3).restart();
+        }
+    }
+
     // =============================================
     //  LINK PATH
     // =============================================
@@ -918,7 +962,7 @@
         });
 
         // Image nodes — rounded square with thumbnail, lit glow
-        var imgSize = 36; // half-size of the square
+        // imgSize is a global, controlled by slider
         nodeG.each(function(d) {
             if (d.type !== 'Image' || !d.thumbnail_url) return;
             var el = d3.select(this);
@@ -1005,11 +1049,11 @@
 
         // Force simulation
         sim = d3.forceSimulation(data.nodes)
-            .force('link', d3.forceLink(data.links).id(function(d) { return d.id; }).distance(80))
-            .force('charge', d3.forceManyBody().strength(-200))
+            .force('link', d3.forceLink(data.links).id(function(d) { return d.id; }).distance(120))
+            .force('charge', d3.forceManyBody().strength(-350))
             .force('center', d3.forceCenter(w / 2, h / 2))
             .force('collide', d3.forceCollide().radius(function(d) {
-                return (d.type === 'Image' && d.thumbnail_url) ? 44 : rad(d) + 8;
+                return (d.type === 'Image' && d.thumbnail_url) ? imgSize + 8 : rad(d) + 8;
             }));
 
         sim.on('tick', function() {
