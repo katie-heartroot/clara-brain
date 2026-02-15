@@ -620,6 +620,7 @@
 
     const TYPE_COLORS = {
         Person:         '#c4854c',
+        Human:          '#c4854c',
         Artwork:        '#c97b7b',
         Location:       '#6b9e78',
         Brand_Identity: '#2d8a5a',
@@ -629,6 +630,10 @@
         Concept:        '#a07bc9',
         Event:          '#c9c07b',
         Skill:          '#7bc9a0',
+        AI_Identity:    '#a07bc9',
+        Website:        '#7bc9c9',
+        Project:        '#c9c07b',
+        Image:          '#d4a574',
     };
 
     const DEFAULT_COLOR = '#8a9d8e';
@@ -718,7 +723,6 @@
             graphNodes.forEach(n => {
                 if (n.thumbnail_url) {
                     const img = new Image();
-                    img.crossOrigin = 'anonymous';
                     img.onload = () => { n._img = img; n._imgLoaded = true; if (drawFrameFn) drawFrameFn(); };
                     img.src = n.thumbnail_url;
                 }
@@ -747,9 +751,9 @@
             // Circle layout
             graphNodes.forEach((n, i) => {
                 const angle = (2 * Math.PI * i) / graphNodes.length;
-                const r = 200 + graphNodes.length * 6;
-                n.x = r * Math.cos(angle) + (Math.random() - 0.5) * 20;
-                n.y = r * Math.sin(angle) + (Math.random() - 0.5) * 20;
+                const r = 300 + graphNodes.length * 10;
+                n.x = r * Math.cos(angle) + (Math.random() - 0.5) * 40;
+                n.y = r * Math.sin(angle) + (Math.random() - 0.5) * 40;
             });
 
             // Legend
@@ -771,7 +775,7 @@
     function forceTick() {
         const nodeMap = {};
         graphNodes.forEach(n => { nodeMap[n.id] = n; });
-        const repulsion = 1200, attraction = 0.04, damping = 0.88, centerG = 0.003;
+        const repulsion = 4000, attraction = 0.012, damping = 0.85, centerG = 0.002;
 
         for (let i = 0; i < graphNodes.length; i++) {
             for (let j = i + 1; j < graphNodes.length; j++) {
@@ -789,7 +793,7 @@
             if (!s || !t) continue;
             let dx = t.x - s.x, dy = t.y - s.y;
             let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            let force = (dist - 100) * attraction;
+            let force = (dist - 180) * attraction;
             let fx = (dx / dist) * force, fy = (dy / dist) * force;
             s.vx += fx; s.vy += fy;
             t.vx -= fx; t.vy -= fy;
@@ -802,7 +806,7 @@
     }
 
     function simulateForces() {
-        for (let iter = 0; iter < 250; iter++) { forceTick(); }
+        for (let iter = 0; iter < 400; iter++) { forceTick(); }
     }
 
     function animateSettle() {
