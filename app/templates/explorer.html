@@ -618,11 +618,11 @@
         var nodeSet = new Set(allNodes.map(function(n) { return n.id; }));
 
         allLinks = relations.filter(function(r) {
-            return nodeSet.has(r.from) && nodeSet.has(r.to);
+            return nodeSet.has(r.from_entity || r.from) && nodeSet.has(r.to_entity || r.to);
         }).map(function(r) {
             return {
-                source: r.from,
-                target: r.to,
+                source: r.from_entity || r.from,
+                target: r.to_entity || r.to,
                 type: r.relation_type || '',
                 color: edgeColorOf(r.relation_type),
             };
