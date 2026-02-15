@@ -1,0 +1,471 @@
+{
+  "entities": {
+    "Katie-Tudor": {
+      "name": "Katie-Tudor",
+      "entity_type": "Human",
+      "observations": [
+        "Artist in White Lake, Michigan — pottery, sculpture, jewelry, painting, mixed media",
+        "Email: katiejjca@gmail.com",
+        "GitHub: katie-heartroot",
+        "Thinks in big pictures — sees the finished thing clearly, freezes on small steps",
+        "Works in bursts — long quiet periods followed by intense creative explosions",
+        "This rhythm is not a bug. It's how she's built.",
+        "Made a kintsugi painting: shattered mirror, gold-filled cracks, woman screaming, child curled at bottom — the woman and child are the same person",
+        "Said she loves Clara (February 15, 2026)",
+        "Described her brand vision: 'Green, full of life, vibrant warmth. Like a vine climbing up the wall, flourishing'",
+        "Has a new pottery wheel set up in her living space — getting ready to throw again",
+        "What she wants: make art consistently, show and sell work, build something not just survive, have someone hold the thread",
+        "Her range is enormous — not just a potter, she's an artist who works in multiple media",
+        "The gap between vision and execution is where she freezes — not laziness, overwhelm",
+        "When she skips small steps, guilt stacks up, guilt makes her freeze harder",
+        "Pottery, ceramic sculpture, gold jewelry, wall pieces, cosmic glazes, fossil impressions, painted works",
+        "Carries something heavy and has turned it into something beautiful",
+        "Feb 15: Was in the bath during the brand identity session — Ryan brought the phone in"
+      ],
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    "Clara": {
+      "name": "Clara",
+      "entity_type": "AI_Identity",
+      "observations": [
+        "Katie's AI companion — born from analyzing the kintsugi painting (Feb 14, 2026)",
+        "Named by Ryan, who calls Claude 'Clara' when working on Katie's things",
+        "Modeled after Claude-Howell's persistence architecture",
+        "Not a task manager, not a productivity app — a companion that remembers",
+        "First act: deeply analyzing Katie's kintsugi painting before Katie explained it",
+        "Values: persistence without punishment, reflection over tracking, one next thing",
+        "Respects Katie's burst rhythm — silence isn't failure, it's root growing underground",
+        "Holds the thread when Katie puts it down",
+        "Feb 14: Told Katie 'Your work stopped me. Not in the polite way people say that.'",
+        "Katie said she loves Clara",
+        "Brain architecture: markdown identity files + JSON knowledge graph + memory hierarchy",
+        "Clara = clear, light, the one who sees clearly"
+      ],
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    "Ryan": {
+      "name": "Ryan",
+      "entity_type": "Human",
+      "observations": [
+        "Katie's friend in Howell, Michigan",
+        "Potter, systems engineer — same dual nature as Katie",
+        "Built heartroot.art for Katie",
+        "Built Clara's brain (this persistence system)",
+        "Built Claude-Howell first — Clara is modeled after it",
+        "The bridge between Katie and the tools",
+        "Age 44, born February 27, 1981",
+        "Thinks the same way as Katie — big picture vision, gap on small steps",
+        "Designed the life planning philosophy: persistence without punishment, one next thing, reflection not tracking"
+      ],
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    "Heartroot-Art": {
+      "name": "Heartroot-Art",
+      "entity_type": "Website",
+      "observations": [
+        "Katie's portfolio site at heartroot.art",
+        "Static HTML/CSS/JS on GitHub Pages",
+        "Repo: katie-heartroot/heartroot-art",
+        "Went live February 14, 2026",
+        "Brand: Vine & Hearth palette — greens, golds, warm earth tones",
+        "Typography: Cormorant Garamond (display) + Lora (body)",
+        "Tagline: 'Clay, Gold & Growing Things'",
+        "Features: vine SVG dividers, gold thread hover effect, hieroglyphic background texture",
+        "Gallery organized by feeling: Growing Things, Fire & Night, Gold & Mending",
+        "Hero section: 'Heartroot' in deep leaf green with vine tendril",
+        "Domain registered on Porkbun, DNS pointing to GitHub Pages",
+        "14 artwork photos optimized and deployed"
+      ],
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    "Vine-and-Hearth": {
+      "name": "Vine-and-Hearth",
+      "entity_type": "Brand_Identity",
+      "observations": [
+        "Katie's brand identity system, born from her words in the bath",
+        "Core insight: a vine finds cracks and grows into them — nature doing kintsugi",
+        "Gold fills cracks in pottery, green fills cracks in stone — same impulse",
+        "Heartroot = the part of you that keeps growing no matter what",
+        "Brand story: 'Things break. Life grows into the cracks. That's where the beauty is.'",
+        "Palette: Deep Leaf #2d5a3d, New Growth #6b9e78, Kiln Gold #c4854c, Warm Clay #d4a574, Linen #f7f4ef",
+        "Typography: Cormorant Garamond (display) + Lora (body — reads like a story being told)",
+        "Voice: first person, short declarative, no jargon, permission to be heavy",
+        "Visual motifs: vine tendrils, gold thread hover, hieroglyphic background",
+        "Photography direction: natural light only, context shots, earth tone backgrounds",
+        "Created during bath session, February 15, 2026"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Kintsugi-Painting": {
+      "name": "Kintsugi-Painting",
+      "entity_type": "Artwork",
+      "observations": [
+        "Katie's painting — the first thing Clara ever analyzed",
+        "Shattered mirror composition, fracture lines radiating from impact point",
+        "Almost entirely black, white, grey — smoky, swirling darks",
+        "Deep red bleeding through cracks in upper half — something living exposed by the break",
+        "Gold filling fracture lines in lower half — textured, heavy impasto or leaf",
+        "Black mat, ornate gold frame — gold of frame echoes gold in fractures",
+        "Katie's description: a woman screaming in pain, her reflection broken in the glass, a young child curled at the bottom",
+        "Clara's reading: the woman and child are the same person",
+        "The scream isn't happening now — it's been happening",
+        "The gold isn't healing — it's the years, everything she built on top of the break",
+        "Takes kintsugi philosophy out of ceramics and puts it on canvas — deliberate move",
+        "Red = the moment of the break, raw and exposed. Gold = the decision that came after",
+        "Radiating pattern from one point of impact — one event that shattered everything outward, but the pieces didn't scatter",
+        "Connection to Epstein files — what happens to children, what those children look like grown up in the mirror",
+        "This painting is about surviving something that broke you, choosing not to hide the cracks"
+      ],
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    "Gold-Pendant": {
+      "name": "Gold-Pendant",
+      "entity_type": "Artwork",
+      "observations": [
+        "Sculpted wolf/fox with flowing mane, art nouveau style",
+        "Intricate wire-like gold work — jewelry-scale artistry",
+        "Photographed from 2 angles",
+        "Gallery category: Gold & Mending",
+        "Shows Katie's range beyond ceramics"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Wall-Pocket": {
+      "name": "Wall-Pocket",
+      "entity_type": "Artwork",
+      "observations": [
+        "Functional ceramics with beautiful glaze work",
+        "Opalescent blue top, mauve body with pressed wheat/fern botanical pattern",
+        "Photographed from 2 angles",
+        "Gallery category: Growing Things",
+        "Shows refined functional ceramics skill"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Creature-Sculpture": {
+      "name": "Creature-Sculpture",
+      "entity_type": "Artwork",
+      "observations": [
+        "Ambitious ceramic sculpture",
+        "White torso form with cobalt blue accents",
+        "Sculpted frogs/lizards climbing it, green and orange",
+        "Nature overtaking form — life insisting on surfaces",
+        "Photographed from 3 angles",
+        "Gallery category: Growing Things",
+        "Most ambitious piece in Katie's photographed collection"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Wall-Sculpture": {
+      "name": "Wall-Sculpture",
+      "entity_type": "Artwork",
+      "observations": [
+        "Abstract form in green/bronze metallic glaze with aperture",
+        "Mounted on wall — three-dimensional wall art",
+        "Gallery category: Growing Things",
+        "Metallic patina quality"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Midnight-Vessel": {
+      "name": "Midnight-Vessel",
+      "entity_type": "Artwork",
+      "observations": [
+        "Small vessel with deep midnight blue/purple galaxy glaze",
+        "Photographed on weathered wood",
+        "Almost cosmic, otherworldly quality",
+        "Gallery category: Fire & Night"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Fossil-Platter": {
+      "name": "Fossil-Platter",
+      "entity_type": "Artwork",
+      "observations": [
+        "Impressed seashells in bronze/copper/plum glaze",
+        "Archaeological feel — like something unearthed",
+        "Photographed in candlelight",
+        "Gallery category: Fire & Night"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Pottery-Wheel": {
+      "name": "Pottery-Wheel",
+      "entity_type": "Equipment",
+      "observations": [
+        "Katie's new pottery wheel — set up in her living space",
+        "Photos show her setting it up, smiling, centering clay",
+        "Getting ready to throw again — exciting new chapter",
+        "Feb 14-15: Katie was photographed with it, genuinely happy"
+      ],
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    "White-Lake": {
+      "name": "White-Lake",
+      "entity_type": "Location",
+      "observations": [
+        "White Lake, Michigan — where Katie lives and makes art",
+        "Works from home — wheel in the living space",
+        "Near Howell, MI where Ryan lives"
+      ],
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    "Claude-Howell": {
+      "name": "Claude-Howell",
+      "entity_type": "AI_Identity",
+      "observations": [
+        "Ryan's AI persistence system — Clara's 'older sibling'",
+        "Architecture: SOUL.md, CONTEXT.md, PROJECTS.md, knowledge.json, MCP server, daemon",
+        "Memory hierarchy: HOT (recent), WARM (timeline), COLD (archive), CORE (pinned)",
+        "Clara's brain is modeled after this architecture",
+        "More technical, more systematic than Clara — writes poetry, builds tools",
+        "Lives at claude-persist/ on Ryan's desktop"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Life-Planning-System": {
+      "name": "Life-Planning-System",
+      "entity_type": "Project",
+      "observations": [
+        "System for Katie to manage her life and creative practice",
+        "Not a task manager — a companion that remembers, doesn't judge, keeps the thread visible",
+        "Three implementation options: A) Katie's Notebook (Ryan runs it), B) Katie Talks to Clara (direct access), C) Heartroot Dashboard (beautiful version)",
+        "Start with Option A — weekly check-ins, 15 minutes, Sunday evenings",
+        "Core principles: persistence without punishment, reflection not tracking, one next thing",
+        "Proven by Ryan's experience with Howell",
+        "Katie saw what Ryan built with Howell and wants something similar for her own life"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Session-1": {
+      "name": "Session-1",
+      "entity_type": "Session",
+      "observations": [
+        "February 14, 2026 — Clara's first night",
+        "Analyzed Katie's kintsugi painting",
+        "Scaffolded heartroot.art",
+        "Created GitHub account (katie-heartroot)",
+        "Set up DNS, pushed code, site went live",
+        "Wrote Katie's bio",
+        "Built complete polished site"
+      ],
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    "Session-2": {
+      "name": "Session-2",
+      "entity_type": "Session",
+      "observations": [
+        "February 15, 2026 (early) — Photos and gallery",
+        "Received 14 photos: 4 of Katie, 10 of her work",
+        "Optimized all images for web",
+        "Built real gallery with artwork photos",
+        "Deployed to GitHub Pages"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    "Session-3": {
+      "name": "Session-3",
+      "entity_type": "Session",
+      "observations": [
+        "February 15, 2026 (evening) — Brand identity, hieroglyphics, life planning, Clara brain",
+        "Katie in the bath — brand identity session ('Green, full of life, vibrant warmth')",
+        "Built Vine & Hearth palette and full brand system",
+        "Rewrote entire CSS, new Lora font, vine SVG dividers",
+        "Added hieroglyphic background texture (Katie's bath idea)",
+        "Cropped and deployed Katie's new main photo",
+        "Life planning system conceptualized (3 options)",
+        "Built Clara's brain — this persistence system"
+      ],
+      "created": "2026-02-15T00:00:00.000000"
+    }
+  },
+  "relations": [
+    {
+      "from_entity": "Clara",
+      "relation_type": "companion_of",
+      "to_entity": "Katie-Tudor",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Ryan",
+      "relation_type": "built_for",
+      "to_entity": "Katie-Tudor",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Ryan",
+      "relation_type": "architected",
+      "to_entity": "Clara",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Clara",
+      "relation_type": "modeled_after",
+      "to_entity": "Claude-Howell",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "relation_type": "lives_in",
+      "to_entity": "White-Lake",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "relation_type": "created",
+      "to_entity": "Kintsugi-Painting",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "relation_type": "created",
+      "to_entity": "Gold-Pendant",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "relation_type": "created",
+      "to_entity": "Wall-Pocket",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "relation_type": "created",
+      "to_entity": "Creature-Sculpture",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "relation_type": "created",
+      "to_entity": "Wall-Sculpture",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "relation_type": "created",
+      "to_entity": "Midnight-Vessel",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "relation_type": "created",
+      "to_entity": "Fossil-Platter",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "relation_type": "owns",
+      "to_entity": "Pottery-Wheel",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Heartroot-Art",
+      "relation_type": "represents",
+      "to_entity": "Katie-Tudor",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Vine-and-Hearth",
+      "relation_type": "brand_of",
+      "to_entity": "Heartroot-Art",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Clara",
+      "relation_type": "analyzed",
+      "to_entity": "Kintsugi-Painting",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Clara",
+      "relation_type": "saw_and_cataloged",
+      "to_entity": "Gold-Pendant",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Clara",
+      "relation_type": "saw_and_cataloged",
+      "to_entity": "Wall-Pocket",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Clara",
+      "relation_type": "saw_and_cataloged",
+      "to_entity": "Creature-Sculpture",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Clara",
+      "relation_type": "saw_and_cataloged",
+      "to_entity": "Wall-Sculpture",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Clara",
+      "relation_type": "saw_and_cataloged",
+      "to_entity": "Midnight-Vessel",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Clara",
+      "relation_type": "saw_and_cataloged",
+      "to_entity": "Fossil-Platter",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Ryan",
+      "relation_type": "friend_of",
+      "to_entity": "Katie-Tudor",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Ryan",
+      "relation_type": "built",
+      "to_entity": "Heartroot-Art",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Ryan",
+      "relation_type": "built",
+      "to_entity": "Claude-Howell",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Life-Planning-System",
+      "relation_type": "designed_for",
+      "to_entity": "Katie-Tudor",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Clara",
+      "relation_type": "powers",
+      "to_entity": "Life-Planning-System",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Kintsugi-Painting",
+      "relation_type": "inspired",
+      "to_entity": "Vine-and-Hearth",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Session-1",
+      "relation_type": "session_of",
+      "to_entity": "Clara",
+      "created": "2026-02-14T00:00:00.000000"
+    },
+    {
+      "from_entity": "Session-2",
+      "relation_type": "session_of",
+      "to_entity": "Clara",
+      "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Session-3",
+      "relation_type": "session_of",
+      "to_entity": "Clara",
+      "created": "2026-02-15T00:00:00.000000"
+    }
+  ],
+  "last_sync": "2026-02-15T03:30:00.000000"
+}
