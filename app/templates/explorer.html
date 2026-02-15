@@ -901,6 +901,29 @@
         glassMerge.append('feMergeNode').attr('in', 'offShadow');
         glassMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
+        // Katie starburst filter — warm golden glow
+        var starGlow = defs.append('filter').attr('id', 'starburst-glow')
+            .attr('x', '-100%').attr('y', '-100%').attr('width', '300%').attr('height', '300%');
+        starGlow.append('feGaussianBlur').attr('stdDeviation', '6').attr('result', 'bloom');
+        var starMerge = starGlow.append('feMerge');
+        starMerge.append('feMergeNode').attr('in', 'bloom');
+        starMerge.append('feMergeNode').attr('in', 'bloom');
+        starMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+        // Starburst radial gradient — bright white-gold center fading out
+        var starGrad = defs.append('radialGradient').attr('id', 'grad-starburst')
+            .attr('cx', '50%').attr('cy', '50%').attr('r', '50%');
+        starGrad.append('stop').attr('offset', '0%').attr('stop-color', '#fffbe6').attr('stop-opacity', 1);
+        starGrad.append('stop').attr('offset', '25%').attr('stop-color', '#f5d984').attr('stop-opacity', 0.9);
+        starGrad.append('stop').attr('offset', '60%').attr('stop-color', '#c4854c').attr('stop-opacity', 0.4);
+        starGrad.append('stop').attr('offset', '100%').attr('stop-color', '#c4854c').attr('stop-opacity', 0);
+
+        // Ray gradient for light spikes
+        var rayGrad = defs.append('linearGradient').attr('id', 'grad-ray')
+            .attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '0%');
+        rayGrad.append('stop').attr('offset', '0%').attr('stop-color', '#fffbe6').attr('stop-opacity', 0.8);
+        rayGrad.append('stop').attr('offset', '100%').attr('stop-color', '#c4854c').attr('stop-opacity', 0);
+
         // Gradients for glass mode
         var usedTypes = {};
         data.nodes.forEach(function(n) { usedTypes[n.type] = n.color; });
@@ -980,6 +1003,7 @@
         nodeG.each(function(d) {
             var el = d3.select(this);
             if (d.type === 'Image' && d.thumbnail_url) return; // handled below
+            if (d.id === 'Katie-Tudor') return; // handled as starburst
             el.append('circle')
                 .attr('class', 'node-circle')
                 .attr('r', rad(d))
@@ -987,6 +1011,75 @@
                 .attr('stroke', d.color)
                 .attr('stroke-width', 1.5)
                 .attr('filter', 'url(#glass)');
+        });
+
+        // Katie-Tudor — burst of light
+        nodeG.each(function(d) {
+            if (d.id !== 'Katie-Tudor') return;
+            var el = d3.select(this);
+            var coreR = Math.max(rad(d), 18);
+            var rayCount = 12;
+            var rayLength = coreR * 3.5;
+
+            // Outer halo
+            el.append('circle')
+                .attr('class', 'katie-halo')
+                .attr('r', rayLength)
+                .attr('fill', 'url(#grad-starburst)')
+                .attr('filter', 'url(#starburst-glow)');
+
+            // Light rays
+            var rayGroup = el.append('g').attr('class', 'katie-rays');
+            for (var i = 0; i < rayCount; i++) {
+                var angle = (i / rayCount) * 360;
+                var thick = (i % 2 === 0) ? 2.5 : 1.2;
+                var len = (i % 2 === 0) ? rayLength : rayLength * 0.65;
+                rayGroup.append('line')
+                    .attr('x1', 0).attr('y1', 0)
+                    .attr('x2', len).attr('y2', 0)
+                    .attr('transform', 'rotate(' + angle + ')')
+                    .attr('stroke', '#fffbe6')
+                    .attr('stroke-width', thick)
+                    .attr('stroke-opacity', (i % 2 === 0) ? 0.5 : 0.25)
+                    .attr('stroke-linecap', 'round');
+            }
+
+            // Animate rays rotation
+            function spinRays() {
+                rayGroup.transition()
+                    .duration(30000)
+                    .ease(d3.easeLinear)
+                    .attrTween('transform', function() {
+                        return d3.interpolateString('rotate(0)', 'rotate(360)');
+                    })
+                    .on('end', spinRays);
+            }
+            spinRays();
+
+            // Pulse the halo
+            function pulseHalo() {
+                el.select('.katie-halo').transition()
+                    .duration(3000)
+                    .ease(d3.easeSinInOut)
+                    .attr('r', rayLength * 1.15)
+                    .attr('opacity', 0.7)
+                    .transition()
+                    .duration(3000)
+                    .ease(d3.easeSinInOut)
+                    .attr('r', rayLength)
+                    .attr('opacity', 1)
+                    .on('end', pulseHalo);
+            }
+            pulseHalo();
+
+            // Bright core circle
+            el.append('circle')
+                .attr('class', 'node-circle katie-core')
+                .attr('r', coreR)
+                .attr('fill', 'url(#grad-starburst)')
+                .attr('stroke', '#f5d984')
+                .attr('stroke-width', 2)
+                .attr('filter', 'url(#starburst-glow)');
         });
 
         // Image nodes — rounded square with thumbnail, lit glow
