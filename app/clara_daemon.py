@@ -34,6 +34,7 @@ import sys
 import time
 import hashlib
 import hmac
+import base64
 from datetime import datetime
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -932,6 +933,29 @@ class ClaraHandler(BaseHTTPRequestHandler):
         # ── Twilio SMS webhook ──
         if path == "/api/sms":
             try:
+                # Validate Twilio signature if token configured
+                if TWILIO_AUTH_TOKEN:
+                    twilio_sig = self.headers.get("X-Twilio-Signature", "")
+                    if not twilio_sig:
+                        print("SMS rejected: no Twilio signature")
+                        self.send_error(403)
+                        return
+                    # Build validation URL
+                    host = self.headers.get("Host", "clara-brain.fly.dev")
+                    url = f"https://{host}{self.path}"
+                    from urllib.parse import parse_qs as pqs_val
+                    post_params = pqs_val(body.decode("utf-8"))
+                    # Flatten params for HMAC (Twilio uses first value)
+                    flat_params = {k: v[0] for k, v in sorted(post_params.items())}
+                    data_str = url + "".join(k + v for k, v in sorted(flat_params.items()))
+                    expected = base64.b64encode(
+                        hmac.new(TWILIO_AUTH_TOKEN.encode(), data_str.encode(), hashlib.sha1).digest()
+                    ).decode()
+                    if not hmac.compare_digest(twilio_sig, expected):
+                        print(f"SMS rejected: invalid Twilio signature")
+                        self.send_error(403)
+                        return
+
                 # Parse form-encoded Twilio data
                 from urllib.parse import parse_qs as pqs
                 params = pqs(body.decode("utf-8"))
@@ -960,10 +984,11 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 if len(response) > 1500:
                     response = response[:1497] + "..."
                 
-                # TwiML response
+                # TwiML response (XML-escape to prevent malformed XML)
+                from xml.sax.saxutils import escape as xml_escape
                 twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Message>{response}</Message>
+    <Message>{xml_escape(response)}</Message>
 </Response>"""
                 
                 self.send_response(200)

@@ -911,11 +911,10 @@
             }
         });
 
-        // Labels
-        nodeG.append('text')
-            .attr('dy', function(d) {
-                return (d.type === 'Image' && d.thumbnail_url) ? imgSize + 12 : rad(d) + 12;
-            })
+        // Labels (skip Image nodes)
+        nodeG.filter(function(d) { return !(d.type === 'Image' && d.thumbnail_url); })
+            .append('text')
+            .attr('dy', function(d) { return rad(d) + 12; })
             .text(function(d) { return trunc(d.id, 16); });
 
         // ── Hover highlight ──

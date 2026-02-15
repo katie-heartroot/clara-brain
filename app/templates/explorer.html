@@ -1275,11 +1275,10 @@
                 .attr('stroke-opacity', 0.6);
         });
 
-        // Node labels
-        nodeG.append('text')
-            .attr('dy', function(d) {
-                return (d.type === 'Image' && d.thumbnail_url) ? 36 + 13 : rad(d) + 13;
-            })
+        // Node labels (skip Image nodes)
+        nodeG.filter(function(d) { return !(d.type === 'Image' && d.thumbnail_url); })
+            .append('text')
+            .attr('dy', function(d) { return rad(d) + 13; })
             .text(function(d) { return trunc(d.id, 16); });
 
         // Interaction
