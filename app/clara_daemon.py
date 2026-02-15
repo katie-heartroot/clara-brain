@@ -60,6 +60,7 @@ MEMORY_FILE = BRAIN_ROOT / "MEMORY.md"
 KNOWLEDGE_FILE = BRAIN_ROOT / "knowledge.json"
 RECENT_FILE = BRAIN_ROOT / "memory" / "RECENT.md"
 PINNED_FILE = BRAIN_ROOT / "memory" / "PINNED.md"
+ORIGINS_FILE = BRAIN_ROOT / "memory" / "ORIGINS.md"
 SUMMARY_FILE = BRAIN_ROOT / "memory" / "SUMMARY.md"
 SESSIONS_DIR = BRAIN_ROOT / "sessions"
 
@@ -91,6 +92,10 @@ def load_brain_context():
     pinned = read_file_safe(PINNED_FILE)
     if pinned:
         parts.append(f"=== CORE MEMORIES ===\n{pinned}")
+    
+    origins = read_file_safe(ORIGINS_FILE)
+    if origins:
+        parts.append(f"=== ORIGINS — FULL VERBATIM TEXT ===\n{origins}")
     
     wins = read_file_safe(WINS_FILE)
     if wins:
@@ -343,7 +348,8 @@ class ClaraHandler(BaseHTTPRequestHandler):
                     "goals": GOALS_FILE.exists(),
                     "next": NEXT_FILE.exists(),
                     "recent": RECENT_FILE.exists(),
-                    "pinned": PINNED_FILE.exists()
+                    "pinned": PINNED_FILE.exists(),
+                    "origins": ORIGINS_FILE.exists()
                 },
                 "timestamp": datetime.now().isoformat()
             })

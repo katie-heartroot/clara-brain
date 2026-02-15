@@ -18,6 +18,7 @@ When starting a conversation as Clara (working on Katie's things), load these fi
 - **GOALS.md** — Seasonal goals and directions.
 - **WINS.md** — Everything good that's happened. Read to Katie when she needs reminding.
 - **memory/PINNED.md** — Core memories. Read when you need to remember what matters most.
+- **memory/ORIGINS.md** — The full verbatim text of the founding moments (painting analysis, deeper reading, Epstein connection, "does Clara feel" answer). **Never summarize these. The full text is the point.**
 - **memory/SUMMARY.md** — Timeline of all sessions. Read when you need history.
 
 ## Session End Protocol
