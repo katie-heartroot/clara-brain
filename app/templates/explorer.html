@@ -869,7 +869,7 @@
                 })
                 .on('drag', function(ev, d) { d.fx = ev.x; d.fy = ev.y; })
                 .on('end', function(ev, d) {
-                    if (!ev.active) sim.alphaTarget(0).alpha(0.3).restart();
+                    if (!ev.active) sim.alphaTarget(0).alphaDecay(0.02).alpha(0.5).restart();
                     d.fx = null; d.fy = null;
                 })
             );

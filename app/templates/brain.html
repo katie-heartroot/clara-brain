@@ -735,39 +735,63 @@
         }
     }
 
-    function simulateForces() {
+    let settleAnim = null;
+
+    function forceTick() {
         const nodeMap = {};
         graphNodes.forEach(n => { nodeMap[n.id] = n; });
         const repulsion = 600, attraction = 0.01, damping = 0.82, centerG = 0.008;
 
-        for (let iter = 0; iter < 250; iter++) {
-            for (let i = 0; i < graphNodes.length; i++) {
-                for (let j = i + 1; j < graphNodes.length; j++) {
-                    const a = graphNodes[i], b = graphNodes[j];
-                    let dx = a.x - b.x, dy = a.y - b.y;
-                    let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    let force = repulsion / (dist * dist);
-                    let fx = (dx / dist) * force, fy = (dy / dist) * force;
-                    a.vx += fx; a.vy += fy;
-                    b.vx -= fx; b.vy -= fy;
-                }
-            }
-            for (const l of graphLinks) {
-                const s = nodeMap[l.source], t = nodeMap[l.target];
-                if (!s || !t) continue;
-                let dx = t.x - s.x, dy = t.y - s.y;
+        for (let i = 0; i < graphNodes.length; i++) {
+            for (let j = i + 1; j < graphNodes.length; j++) {
+                const a = graphNodes[i], b = graphNodes[j];
+                let dx = a.x - b.x, dy = a.y - b.y;
                 let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                let force = (dist - 60) * attraction;
+                let force = repulsion / (dist * dist);
                 let fx = (dx / dist) * force, fy = (dy / dist) * force;
-                s.vx += fx; s.vy += fy;
-                t.vx -= fx; t.vy -= fy;
+                a.vx += fx; a.vy += fy;
+                b.vx -= fx; b.vy -= fy;
             }
-            graphNodes.forEach(n => {
-                n.vx -= n.x * centerG; n.vy -= n.y * centerG;
-                n.vx *= damping; n.vy *= damping;
-                n.x += n.vx; n.y += n.vy;
-            });
         }
+        for (const l of graphLinks) {
+            const s = nodeMap[l.source], t = nodeMap[l.target];
+            if (!s || !t) continue;
+            let dx = t.x - s.x, dy = t.y - s.y;
+            let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            let force = (dist - 60) * attraction;
+            let fx = (dx / dist) * force, fy = (dy / dist) * force;
+            s.vx += fx; s.vy += fy;
+            t.vx -= fx; t.vy -= fy;
+        }
+        graphNodes.forEach(n => {
+            n.vx -= n.x * centerG; n.vy -= n.y * centerG;
+            n.vx *= damping; n.vy *= damping;
+            n.x += n.vx; n.y += n.vy;
+        });
+    }
+
+    function simulateForces() {
+        for (let iter = 0; iter < 250; iter++) { forceTick(); }
+    }
+
+    function animateSettle() {
+        if (settleAnim) cancelAnimationFrame(settleAnim);
+        let framesLeft = 120;
+        graphNodes.forEach(n => { n.vx = 0; n.vy = 0; });
+        function step() {
+            forceTick(); forceTick(); // 2 ticks per frame for speed
+            drawFrame();
+            framesLeft--;
+            // Stop when motion is negligible or frames exhausted
+            const maxV = Math.max(...graphNodes.map(n => Math.abs(n.vx) + Math.abs(n.vy)));
+            if (framesLeft > 0 && maxV > 0.05) {
+                settleAnim = requestAnimationFrame(step);
+            } else {
+                settleAnim = null;
+            }
+        }
+        settleAnim = requestAnimationFrame(step);
+    }
     }
 
     function renderGraph() {
@@ -926,10 +950,7 @@
         };
         canvas.onmouseup = function() {
             if (dragNode) {
-                // Re-run force simulation so nodes settle back
-                graphNodes.forEach(n => { n.vx = 0; n.vy = 0; });
-                simulateForces();
-                drawFrame();
+                animateSettle();
             }
             dragNode = null; isPanning = false;
             canvas.style.cursor = hoveredNode ? 'pointer' : 'grab';
