@@ -692,7 +692,20 @@
                 x: 0, y: 0, vx: 0, vy: 0,
                 color: typeColor(data.entity_type),
                 radius: Math.max(6, Math.sqrt((data.observations || []).length) * 3 + 5),
+                thumbnail_url: data.thumbnail_url || null,
+                image_url: data.image_url || null,
+                _img: null, _imgLoaded: false,
             }));
+
+            // Preload thumbnail images for Image entities
+            graphNodes.forEach(n => {
+                if (n.thumbnail_url) {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => { n._img = img; n._imgLoaded = true; if (drawFrameFn) drawFrameFn(); };
+                    img.src = n.thumbnail_url;
+                }
+            });
 
             const nodeSet = new Set(graphNodes.map(n => n.id));
             graphLinks = relations.filter(r => nodeSet.has(r.from_entity || r.from) && nodeSet.has(r.to_entity || r.to)).map(r => ({
@@ -736,11 +749,12 @@
     }
 
     let settleAnim = null;
+    let drawFrameFn = null; // set by renderGraph, used by animateSettle
 
     function forceTick() {
         const nodeMap = {};
         graphNodes.forEach(n => { nodeMap[n.id] = n; });
-        const repulsion = 600, attraction = 0.01, damping = 0.82, centerG = 0.008;
+        const repulsion = 600, attraction = 0.06, damping = 0.88, centerG = 0.005;
 
         for (let i = 0; i < graphNodes.length; i++) {
             for (let j = i + 1; j < graphNodes.length; j++) {
@@ -776,15 +790,14 @@
 
     function animateSettle() {
         if (settleAnim) cancelAnimationFrame(settleAnim);
-        let framesLeft = 120;
-        graphNodes.forEach(n => { n.vx = 0; n.vy = 0; });
+        if (!drawFrameFn) return;
+        let framesLeft = 180;
         function step() {
-            forceTick(); forceTick(); // 2 ticks per frame for speed
-            drawFrame();
+            forceTick();
+            drawFrameFn();
             framesLeft--;
-            // Stop when motion is negligible or frames exhausted
             const maxV = Math.max(...graphNodes.map(n => Math.abs(n.vx) + Math.abs(n.vy)));
-            if (framesLeft > 0 && maxV > 0.05) {
+            if (framesLeft > 0 && maxV > 0.08) {
                 settleAnim = requestAnimationFrame(step);
             } else {
                 settleAnim = null;
@@ -882,6 +895,23 @@
                 ctx.shadowColor = 'transparent';
                 ctx.shadowBlur = 0;
 
+                // Draw image thumbnail inside node if available
+                if (n._imgLoaded && n._img) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(x, y, r - 1, 0, Math.PI * 2);
+                    ctx.clip();
+                    const imgSize = r * 2;
+                    ctx.drawImage(n._img, x - r, y - r, imgSize, imgSize);
+                    ctx.restore();
+                    // Redraw border on top of image
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.strokeStyle = n.color;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
                 if (sc > 0.4 || hoveredNode === n) {
                     ctx.font = Math.max(9, 11 * Math.min(sc, 1.5)) + 'px Lora, serif';
                     ctx.fillStyle = alpha < 1 ? 'rgba(224,219,209,0.2)' : '#e0dbd1';
@@ -909,6 +939,7 @@
             }
         }
 
+        drawFrameFn = drawFrame;
         drawFrame();
 
         // Mouse

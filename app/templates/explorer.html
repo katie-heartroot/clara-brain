@@ -612,6 +612,8 @@
                 color: colorOf(data.entity_type),
                 ts: data.created || null,
                 degree: 0, inDeg: 0, outDeg: 0,
+                thumbnail_url: data.thumbnail_url || null,
+                image_url: data.image_url || null,
             };
         });
 
@@ -889,6 +891,25 @@
                 if (nodeStyle === 'lit') return 'url(#glow)';
                 return null;
             });
+
+        // Image thumbnails inside Image nodes
+        nodeG.each(function(d) {
+            if (!d.thumbnail_url) return;
+            var el = d3.select(this);
+            var r = rad(d);
+            var clipId = 'clip-img-' + d.id.replace(/[^a-zA-Z0-9]/g, '_');
+            defs.append('clipPath').attr('id', clipId)
+                .append('circle').attr('r', r - 1);
+            el.insert('image', 'text')
+                .attr('class', 'node-img')
+                .attr('href', d.thumbnail_url)
+                .attr('width', r * 2).attr('height', r * 2)
+                .attr('x', -r).attr('y', -r)
+                .attr('clip-path', 'url(#' + clipId + ')')
+                .attr('preserveAspectRatio', 'xMidYMid slice');
+            // Move circle to just a stroke ring on top
+            el.select('.node-circle').attr('fill', 'none').attr('filter', null);
+        });
 
         // Node labels
         nodeG.append('text')

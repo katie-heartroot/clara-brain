@@ -10,8 +10,8 @@ COPY memory/ ./brain/memory/
 # Copy app
 COPY app/ ./app/
 
-# Create sessions directory
-RUN mkdir -p /data/brain/sessions /data/brain/memory
+# Create persistent directories
+RUN mkdir -p /data/brain/sessions /data/brain/memory /data/brain/images/thumbs
 
 # Entrypoint script
 COPY entrypoint.sh /app/entrypoint.sh

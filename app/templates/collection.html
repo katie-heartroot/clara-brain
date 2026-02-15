@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>My Collection — heartroot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #141c17;
+  --bg2: #0f1712;
+  --surface: #1a241e;
+  --surface2: #1e2a22;
+  --border: #2d5a3d33;
+  --border-hover: #2d5a3d66;
+  --text: #dae8d8;
+  --text-dim: #7a8a78;
+  --text-warm: #e0dbd1;
+  --accent: #c4854c;
+  --accent-glow: #c4854c33;
+  --gold: #c4854c;
+  --leaf: #2d5a3d;
+  --growth: #6b9e78;
+  --clay: #d4a574;
+  --linen: #f7f4ef;
+  --soil: #2c2c28;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Lora', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Password Gate ── */
+#gate {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 2rem;
+}
+#gate .vine { font-size: 2rem; opacity: 0.3; margin-bottom: 1.5rem; letter-spacing: 0.5em; }
+#gate .title {
+  font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; color: var(--clay);
+  margin-bottom: 0.3rem; font-weight: 400;
+}
+#gate .sub { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem; font-style: italic; }
+#gate input {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  font-family: 'Lora', serif; font-size: 1rem; padding: 0.8rem 1.2rem;
+  border-radius: 8px; width: 240px; text-align: center; outline: none;
+}
+#gate input:focus { border-color: var(--accent); }
+#gate input::placeholder { color: var(--text-dim); opacity: 0.5; }
+#gate .error { color: var(--accent); font-size: 0.85rem; margin-top: 0.8rem; opacity: 0; transition: opacity 0.3s; }
+#gate .error.show { opacity: 1; }
+
+/* ── Main ── */
+#main { display: none; }
+
+.header {
+  text-align: center; padding: 2rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.header h1 {
+  font-family: 'Cormorant Garamond', serif; font-weight: 400;
+  font-size: 1.8rem; color: var(--clay); letter-spacing: 0.05em;
+}
+.header .sub { color: var(--text-dim); font-size: 0.85rem; margin-top: 0.2rem; }
+
+/* ── Tier Tabs ── */
+.tier-bar {
+  display: flex; justify-content: center; gap: 0.4rem; flex-wrap: wrap;
+  padding: 1rem 1rem 0.8rem; border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.tier-tab {
+  padding: 0.4rem 1rem; border-radius: 20px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-dim); font-family: 'Lora', serif;
+  font-size: 0.82rem; cursor: pointer; transition: all 0.25s; white-space: nowrap;
+}
+.tier-tab:hover { border-color: var(--border-hover); color: var(--text); }
+.tier-tab.active {
+  background: var(--leaf); border-color: var(--leaf); color: var(--linen);
+}
+.tier-count {
+  display: inline-block; background: rgba(255,255,255,0.1); font-size: 0.7rem;
+  padding: 0 5px; border-radius: 8px; margin-left: 4px;
+}
+.tier-tab.active .tier-count { background: rgba(255,255,255,0.2); }
+
+/* ── Upload Strip ── */
+.upload-strip {
+  display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1.2rem;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  max-width: 800px; margin: 0 auto;
+}
+.upload-strip .add-btn {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.45rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text-dim); font-family: 'Lora', serif;
+  font-size: 0.85rem; cursor: pointer; transition: all 0.25s;
+  position: relative; overflow: hidden;
+}
+.upload-strip .add-btn:hover { border-color: var(--accent); color: var(--text); }
+.upload-strip .add-btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-strip .add-btn .icon { font-size: 1.1rem; }
+.upload-strip .vis-select {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+  font-family: 'Lora', serif; font-size: 0.8rem; padding: 0.3rem 0.5rem;
+  border-radius: 6px; outline: none;
+}
+.upload-strip .vis-select:focus { border-color: var(--accent); }
+
+/* ── Upload Preview Panel ── */
+.upload-panel {
+  display: none; max-width: 560px; margin: 1rem auto; padding: 0 1.2rem;
+}
+.upload-panel.open { display: block; }
+.up-preview {
+  display: flex; gap: 1rem; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1rem; align-items: flex-start;
+}
+.up-preview img {
+  width: 120px; height: 120px; object-fit: cover; border-radius: 8px; flex-shrink: 0;
+  background: var(--bg2);
+}
+.up-fields { flex: 1; display: flex; flex-direction: column; gap: 0.6rem; }
+.up-fields input, .up-fields textarea {
+  width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+  font-family: 'Lora', serif; font-size: 0.9rem; padding: 0.5rem 0.7rem;
+  border-radius: 6px; outline: none;
+}
+.up-fields input:focus, .up-fields textarea:focus { border-color: var(--accent); }
+.up-fields textarea { resize: vertical; min-height: 52px; }
+.up-fields .tier-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.up-fields .tier-pick {
+  padding: 0.25rem 0.6rem; border-radius: 12px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-dim); font-family: 'Lora', serif;
+  font-size: 0.75rem; cursor: pointer; transition: all 0.2s;
+}
+.up-fields .tier-pick:hover { border-color: var(--growth); }
+.up-fields .tier-pick.active { background: var(--leaf); border-color: var(--leaf); color: var(--linen); }
+.up-actions { display: flex; gap: 0.5rem; margin-top: 0.3rem; }
+.up-actions button {
+  flex: 1; padding: 0.5rem; border-radius: 6px; border: none;
+  font-family: 'Cormorant Garamond', serif; font-size: 1rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.up-actions .save-btn { background: var(--leaf); color: var(--linen); }
+.up-actions .save-btn:hover { background: #3a7a52; }
+.up-actions .cancel-btn { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+.up-actions .cancel-btn:hover { color: var(--text); }
+
+/* ── Gallery ── */
+.gallery-wrap {
+  max-width: 900px; margin: 0 auto; padding: 1.2rem 1rem 3rem;
+}
+.gallery-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.gallery-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; cursor: pointer; transition: border-color 0.3s, transform 0.2s;
+}
+.gallery-item:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.gallery-item img {
+  width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+}
+.gallery-item .meta { padding: 0.6rem 0.8rem; }
+.gallery-item .caption { font-size: 0.85rem; color: var(--text); line-height: 1.3; }
+.gallery-item .item-tier {
+  display: inline-block; font-size: 0.65rem; color: var(--text-dim);
+  background: var(--bg2); padding: 0.1rem 0.4rem; border-radius: 8px; margin-top: 0.3rem;
+}
+.gallery-item .date { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.2rem; }
+.gallery-item .from-ryan { color: var(--gold); }
+.gallery-empty {
+  grid-column: 1 / -1; text-align: center; color: var(--text-dim);
+  font-style: italic; padding: 3rem; font-size: 0.95rem;
+}
+
+/* ── Lightbox ── */
+.lightbox {
+  display: none; position: fixed; inset: 0;
+  background: rgba(10, 15, 12, 0.96); z-index: 200;
+  padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.lightbox.open { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.lightbox img { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; }
+.lightbox .lb-caption {
+  font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; color: var(--clay);
+  margin-top: 1rem; text-align: center;
+}
+.lightbox .lb-note {
+  color: var(--text); font-size: 0.9rem; margin-top: 0.6rem; max-width: 520px;
+  text-align: center; line-height: 1.6; font-style: italic;
+}
+.lightbox .lb-tier {
+  color: var(--growth); font-size: 0.75rem; margin-top: 0.6rem;
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.lightbox .lb-date { color: var(--text-dim); font-size: 0.75rem; margin-top: 0.3rem; }
+.lightbox .lb-close {
+  position: fixed; top: 1rem; right: 1.2rem; color: var(--text-dim);
+  font-size: 1.5rem; cursor: pointer; z-index: 210;
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+}
+.lightbox .lb-close:hover { color: var(--text); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 2rem; left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--surface2); border: 1px solid var(--growth); color: var(--growth);
+  padding: 0.8rem 1.5rem; border-radius: 8px; font-size: 0.9rem; font-style: italic;
+  opacity: 0; transition: all 0.5s ease; z-index: 100; pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ── Uploading overlay ── */
+.uploading {
+  display: none; position: fixed; inset: 0;
+  background: rgba(10, 15, 12, 0.85); z-index: 300;
+  flex-direction: column; align-items: center; justify-content: center;
+}
+.uploading.show { display: flex; }
+.uploading .spinner {
+  width: 40px; height: 40px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite;
+}
+.uploading .label { color: var(--text-dim); margin-top: 1rem; font-style: italic; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Back link ── */
+.back-link {
+  position: fixed; top: 0.8rem; left: 1rem; z-index: 50;
+  color: var(--text-dim); text-decoration: none; font-size: 0.8rem;
+}
+.back-link:hover { color: var(--text); }
+
+/* ── Mobile ── */
+@media (max-width: 560px) {
+  .header h1 { font-size: 1.4rem; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .up-preview { flex-direction: column; }
+  .up-preview img { width: 100%; height: 200px; }
+  .tier-tab { font-size: 0.75rem; padding: 0.35rem 0.7rem; }
+}
+</style>
+</head>
+<body>
+
+<a class="back-link" href="/">← Clara</a>
+
+<!-- Password Gate -->
+<div id="gate">
+  <div class="vine">❧ ❧ ❧</div>
+  <div class="title">My Collection</div>
+  <div class="sub">your private visual world</div>
+  <input type="password" id="gatePassword" placeholder="password" autocomplete="off" autofocus>
+  <div class="error" id="gateError">That's not it.</div>
+</div>
+
+<!-- Main Page -->
+<div id="main">
+  <div class="header">
+    <h1>My Collection</h1>
+    <div class="sub">everything you've gathered, organized by meaning</div>
+  </div>
+
+  <!-- Tier Tabs -->
+  <div class="tier-bar" id="tierBar">
+    <button class="tier-tab active" data-tier="all" onclick="setTier('all')">All</button>
+    <button class="tier-tab" data-tier="studio" onclick="setTier('studio')">The Studio <span class="tier-count" id="count-studio">0</span></button>
+    <button class="tier-tab" data-tier="root-cellar" onclick="setTier('root-cellar')">The Root Cellar <span class="tier-count" id="count-root-cellar">0</span></button>
+    <button class="tier-tab" data-tier="greenware" onclick="setTier('greenware')">Greenware <span class="tier-count" id="count-greenware">0</span></button>
+    <button class="tier-tab" data-tier="kiln" onclick="setTier('kiln')">The Kiln <span class="tier-count" id="count-kiln">0</span></button>
+    <button class="tier-tab" data-tier="from-ryan" onclick="setTier('from-ryan')">From Ryan <span class="tier-count" id="count-from-ryan">0</span></button>
+  </div>
+
+  <!-- Upload Strip -->
+  <div class="upload-strip">
+    <label class="add-btn">
+      <span class="icon">+</span> Add Image
+      <input type="file" id="fileInput" accept="image/*">
+    </label>
+    <select class="vis-select" id="defaultVis">
+      <option value="private">Private</option>
+      <option value="public">Public</option>
+      <option value="sacred">Sacred</option>
+    </select>
+  </div>
+
+  <!-- Upload Preview Panel -->
+  <div class="upload-panel" id="uploadPanel">
+    <div class="up-preview">
+      <img id="upPreview" alt="Preview">
+      <div class="up-fields">
+        <input type="text" id="upCaption" placeholder="Caption">
+        <textarea id="upNote" placeholder="Note (optional)"></textarea>
+        <div class="tier-row" id="upTierRow"></div>
+        <div class="up-actions">
+          <button class="cancel-btn" onclick="cancelUpload()">Cancel</button>
+          <button class="save-btn" id="saveBtn" onclick="doUpload()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gallery -->
+  <div class="gallery-wrap">
+    <div class="gallery-grid" id="gallery"></div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-close" id="lbClose">✕</div>
+  <img id="lbImg" alt="">
+  <div class="lb-caption" id="lbCaption"></div>
+  <div class="lb-note" id="lbNote"></div>
+  <div class="lb-tier" id="lbTier"></div>
+  <div class="lb-date" id="lbDate"></div>
+</div>
+
+<!-- Upload overlay -->
+<div class="uploading" id="uploading">
+  <div class="spinner"></div>
+  <div class="label">adding to your collection...</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">Saved.</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+const TIERS = {
+  'studio': 'The Studio',
+  'root-cellar': 'The Root Cellar',
+  'greenware': 'Greenware',
+  'kiln': 'The Kiln',
+  'from-ryan': 'From Ryan'
+};
+
+let password = '';
+let allItems = [];
+let currentTier = 'all';
+let selectedFile = null;
+let resizedBlob = null;
+let uploadTier = 'studio';
+
+// ── Auth Gate ──
+$('#gatePassword').addEventListener('keydown', async e => {
+  if (e.key !== 'Enter') return;
+  password = e.target.value;
+  try {
+    const r = await fetch('/api/images', { headers: { 'X-Auth': password } });
+    if (r.ok) {
+      allItems = await r.json();
+      $('#gate').style.display = 'none';
+      $('#main').style.display = 'block';
+      buildTierPicker();
+      updateCounts();
+      renderGallery();
+    } else {
+      showError();
+    }
+  } catch { showError(); }
+});
+
+function showError() {
+  $('#gateError').classList.add('show');
+  setTimeout(() => $('#gateError').classList.remove('show'), 2000);
+}
+
+// ── Tier Tabs ──
+function setTier(t) {
+  currentTier = t;
+  $$('.tier-tab').forEach(el => el.classList.toggle('active', el.dataset.tier === t));
+  renderGallery();
+}
+
+function updateCounts() {
+  Object.keys(TIERS).forEach(t => {
+    const el = document.getElementById('count-' + t);
+    if (el) el.textContent = allItems.filter(i => i.tier === t).length;
+  });
+}
+
+// ── File Input ──
+$('#fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+});
+
+function handleFile(file) {
+  selectedFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 1800;
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => {
+        resizedBlob = blob;
+        $('#upPreview').src = URL.createObjectURL(blob);
+        $('#uploadPanel').classList.add('open');
+        $('#upCaption').focus();
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Tier Picker in Upload ──
+function buildTierPicker() {
+  const row = $('#upTierRow');
+  row.innerHTML = Object.entries(TIERS).map(([k, v]) =>
+    `<button class="tier-pick${k === uploadTier ? ' active' : ''}" data-t="${k}" onclick="pickTier('${k}')">${v}</button>`
+  ).join('');
+}
+
+function pickTier(t) {
+  uploadTier = t;
+  $$('.tier-pick').forEach(el => el.classList.toggle('active', el.dataset.t === t));
+}
+
+function cancelUpload() {
+  selectedFile = null; resizedBlob = null;
+  $('#uploadPanel').classList.remove('open');
+  $('#fileInput').value = '';
+  $('#upCaption').value = '';
+  $('#upNote').value = '';
+}
+
+// ── Upload ──
+async function doUpload() {
+  if (!resizedBlob) return;
+  const caption = $('#upCaption').value.trim();
+  const note = $('#upNote').value.trim();
+  const visibility = $('#defaultVis').value;
+
+  $('#uploading').classList.add('show');
+  $('#saveBtn').disabled = true;
+
+  try {
+    const fd = new FormData();
+    fd.append('image', resizedBlob, `img-${Date.now()}.jpg`);
+    fd.append('caption', caption);
+    fd.append('note', note);
+    fd.append('tier', uploadTier);
+    fd.append('visibility', visibility);
+    fd.append('original_name', selectedFile.name);
+
+    const r = await fetch('/api/images/upload', {
+      method: 'POST',
+      headers: { 'X-Auth': password },
+      body: fd
+    });
+
+    if (r.ok) {
+      cancelUpload();
+      showToast('Added to your collection.');
+      // Reload
+      const resp = await fetch('/api/images', { headers: { 'X-Auth': password } });
+      if (resp.ok) allItems = await resp.json();
+      updateCounts();
+      renderGallery();
+    } else {
+      alert('Upload failed.');
+    }
+  } catch (e) {
+    alert('Something went wrong: ' + e.message);
+  } finally {
+    $('#uploading').classList.remove('show');
+    $('#saveBtn').disabled = false;
+  }
+}
+
+// ── Gallery ──
+function renderGallery() {
+  const g = $('#gallery');
+  let items = allItems;
+
+  if (currentTier !== 'all') {
+    items = items.filter(i => i.tier === currentTier);
+  }
+
+  if (!items.length) {
+    const tierName = currentTier === 'all' ? 'collection' : TIERS[currentTier] || currentTier;
+    g.innerHTML = `<div class="gallery-empty">Nothing in ${tierName} yet.</div>`;
+    return;
+  }
+
+  items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  g.innerHTML = items.map(item => {
+    const isRyan = item.tier === 'from-ryan';
+    return `
+    <div class="gallery-item" onclick='openLB(${JSON.stringify(item)})'>
+      <img src="${item.thumb_url || item.url}" alt="${esc(item.caption || '')}" loading="lazy">
+      <div class="meta">
+        ${item.caption ? `<div class="caption">${esc(item.caption)}</div>` : ''}
+        <div class="item-tier${isRyan ? ' from-ryan' : ''}">${TIERS[item.tier] || item.tier}</div>
+        <div class="date">${item.date || ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ── Lightbox ──
+function openLB(item) {
+  $('#lbImg').src = item.url;
+  $('#lbCaption').textContent = item.caption || '';
+  $('#lbNote').textContent = item.note || '';
+  $('#lbTier').textContent = TIERS[item.tier] || item.tier;
+  $('#lbDate').textContent = item.date || '';
+  $('#lightbox').classList.add('open');
+}
+window.openLB = openLB;
+
+$('#lbClose').addEventListener('click', () => $('#lightbox').classList.remove('open'));
+$('#lightbox').addEventListener('click', e => { if (e.target === $('#lightbox')) $('#lightbox').classList.remove('open'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#lightbox').classList.remove('open'); });
+
+// ── Toast ──
+function showToast(msg) {
+  const t = $('#toast');
+  t.textContent = msg || 'Saved.';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

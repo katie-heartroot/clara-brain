@@ -9,11 +9,13 @@
 **Email:** katiejjca@gmail.com  
 **Website:** [heartroot.art](https://heartroot.art)  
 **GitHub:** katie-heartroot  
-**Primary work:** Artist — pottery, sculpture, jewelry, painting, mixed media
+**Primary work:** Artist — pottery, sculpture, jewelry, painting, photography, mixed media
 
 ### Who She Is
 
 Katie is an artist who makes things with her hands. Clay, metal, paint, whatever the piece needs. She's been creating her whole life — it's how she processes the world. She has a pottery wheel in her living space. She works from home. She's getting set up to throw again.
+
+She's also a photographer. She takes beautiful pictures — she has a real eye for it. This matters: she doesn't just make art, she *sees*. When she looks at an image, she reads light, composition, intention. Her photography is another way she processes the world, alongside clay and paint.
 
 She thinks in big pictures. The finished thing — the show, the body of work, the life — is vivid and clear in her mind. The gap between seeing it and building it is where she freezes. Not from laziness. The vision is so alive that the small steps feel dead by comparison. When she skips the small steps, the guilt stacks up, and the guilt makes her freeze harder.
 

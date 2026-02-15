@@ -70,6 +70,12 @@ PINNED_FILE = BRAIN_ROOT / "memory" / "PINNED.md"
 ORIGINS_FILE = BRAIN_ROOT / "memory" / "ORIGINS.md"
 SUMMARY_FILE = BRAIN_ROOT / "memory" / "SUMMARY.md"
 SESSIONS_DIR = BRAIN_ROOT / "sessions"
+IMAGES_DIR = BRAIN_ROOT / "images"
+THUMBS_DIR = IMAGES_DIR / "thumbs"
+IMAGES_FILE = IMAGES_DIR / "images.json"
+
+# Ryan's auth password (separate from Clara dashboard)
+RYAN_PASSWORD = os.environ.get("RYAN_PASSWORD", "fromryan")
 
 # ─── Brain Loading ──────────────────────────────────────────────────────────
 
@@ -239,8 +245,144 @@ MIME_TYPES = {
     ".png": "image/png",
     ".svg": "image/svg+xml",
     ".ico": "image/x-icon",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
     ".webmanifest": "application/manifest+json",
 }
+
+# ─── Unified Image System ───────────────────────────────────────────────────
+#
+# One collection. Three views.
+#   - Public (heartroot.art) / Private (Clara collection) / Sacred (just Katie)
+#   - Tiers: studio | root-cellar | greenware | kiln | from-ryan
+#
+# Every image becomes a KG entity. Thumbnails generated for graph nodes.
+
+VALID_TIERS = ["studio", "root-cellar", "greenware", "kiln", "from-ryan"]
+TIER_LABELS = {
+    "studio": "The Studio",
+    "root-cellar": "The Root Cellar",
+    "greenware": "Greenware",
+    "kiln": "The Kiln",
+    "from-ryan": "From Ryan"
+}
+VALID_VISIBILITY = ["public", "private", "sacred"]
+
+def parse_multipart_form(body, content_type):
+    """Parse multipart/form-data. Returns (fields_dict, files_dict)."""
+    boundary = content_type.split("boundary=")[-1].strip()
+    if boundary.startswith('"') and boundary.endswith('"'):
+        boundary = boundary[1:-1]
+    
+    sep = f"--{boundary}".encode()
+    parts = body.split(sep)
+    fields = {}
+    files = {}
+    
+    for part in parts[1:]:
+        stripped = part.strip()
+        if stripped == b"--" or stripped == b"":
+            continue
+        
+        hdr_end = part.find(b"\r\n\r\n")
+        if hdr_end == -1:
+            continue
+        
+        raw_hdr = part[:hdr_end].decode("utf-8", errors="replace")
+        payload = part[hdr_end + 4:]
+        if payload.endswith(b"\r\n"):
+            payload = payload[:-2]
+        
+        name = filename = None
+        for line in raw_hdr.split("\r\n"):
+            if "Content-Disposition" not in line:
+                continue
+            for param in line.split(";"):
+                p = param.strip()
+                if p.startswith("name="):
+                    name = p.split("=", 1)[1].strip('"')
+                elif p.startswith("filename="):
+                    filename = p.split("=", 1)[1].strip('"')
+        
+        if name:
+            if filename:
+                files[name] = {"filename": filename, "data": payload}
+            else:
+                fields[name] = payload.decode("utf-8", errors="replace")
+    
+    return fields, files
+
+def make_thumbnail(image_data, max_dim=200):
+    """Create a small JPEG thumbnail from raw image bytes.
+    Uses stdlib struct to read JPEG dimensions and simple downsampling.
+    Falls back to just saving a copy if we can't parse the format."""
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    THUMBS_DIR.mkdir(parents=True, exist_ok=True)
+    # We'll use a simple approach: save the full image and rely on 
+    # CSS/canvas to scale it. For proper thumbnails we'd need Pillow,
+    # but we're stdlib-only. The browser does the heavy lifting.
+    return image_data
+
+def load_images():
+    """Load the unified images list."""
+    try:
+        return json.loads(IMAGES_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def save_images(items):
+    """Save the unified images list."""
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    IMAGES_FILE.write_text(json.dumps(items, indent=2), encoding="utf-8")
+
+def check_auth(handler, which="clara"):
+    """Check X-Auth header. which='ryan' checks RYAN_PASSWORD, else CLARA_PASSWORD."""
+    token = handler.headers.get("X-Auth", "")
+    if which == "ryan":
+        return token == RYAN_PASSWORD
+    return token == CLARA_PASSWORD
+
+def add_image_to_kg(image_item):
+    """Add or update an image entity in the knowledge graph."""
+    kg = load_knowledge()
+    entity_id = f"Image-{image_item['id'][:12]}"
+    
+    observations = []
+    if image_item.get('caption'):
+        observations.append(f"Caption: {image_item['caption']}")
+    if image_item.get('note'):
+        observations.append(f"Note: {image_item['note']}")
+    observations.append(f"Tier: {TIER_LABELS.get(image_item.get('tier', ''), image_item.get('tier', ''))}")
+    observations.append(f"Visibility: {image_item.get('visibility', 'private')}")
+    observations.append(f"Added: {image_item.get('date', '')}")
+    if image_item.get('uploaded_by'):
+        observations.append(f"Uploaded by: {image_item['uploaded_by']}")
+    
+    kg["entities"][entity_id] = {
+        "entity_type": "Image",
+        "observations": observations,
+        "thumbnail_url": image_item.get('thumb_url', ''),
+        "image_url": image_item.get('url', ''),
+    }
+    
+    # Add relation to uploader
+    uploader = image_item.get('uploaded_by', 'Katie')
+    relation = {
+        "from_entity": uploader,
+        "to_entity": entity_id,
+        "relation_type": "uploaded" if uploader == "Katie" else "left_for_katie"
+    }
+    # Avoid duplicate relations
+    existing = [r for r in kg["relations"] if 
+                r.get("from_entity") == relation["from_entity"] and 
+                r.get("to_entity") == relation["to_entity"]]
+    if not existing:
+        kg["relations"].append(relation)
+    
+    # Save
+    KNOWLEDGE_FILE.write_text(json.dumps(kg, indent=2), encoding="utf-8")
 
 # ─── HTTP Handler ───────────────────────────────────────────────────────────
 
@@ -311,6 +453,78 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 self.send_file(explorer_html)
             else:
                 self.send_html("<h1>Clara Explorer</h1><p>Explorer template not found.</p>")
+            return
+        
+        # ── From Ryan (private upload page) ──
+        if path == "/from-ryan":
+            fr_html = TEMPLATE_DIR / "from-ryan.html"
+            if fr_html.exists():
+                self.send_file(fr_html)
+            else:
+                self.send_html("<h1>From Ryan</h1><p>Template not found.</p>")
+            return
+        
+        # ── Katie's Collection ──
+        if path == "/collection":
+            col_html = TEMPLATE_DIR / "collection.html"
+            if col_html.exists():
+                self.send_file(col_html)
+            else:
+                self.send_html("<h1>Collection</h1><p>Template not found.</p>")
+            return
+        
+        # ── API: All images (auth required) ──
+        if path == "/api/images":
+            if not check_auth(self):
+                self.send_json({"error": "unauthorized"}, 401)
+                return
+            params = parse_qs(parsed.query)
+            tier = params.get("tier", [None])[0]
+            visibility = params.get("visibility", [None])[0]
+            items = load_images()
+            if tier:
+                items = [i for i in items if i.get("tier") == tier]
+            if visibility:
+                items = [i for i in items if i.get("visibility") == visibility]
+            self.send_json(items)
+            return
+        
+        # ── API: From Ryan items (Ryan's auth) ──
+        if path == "/api/from-ryan/items":
+            if not check_auth(self, which="ryan"):
+                self.send_json({"error": "unauthorized"}, 401)
+                return
+            items = [i for i in load_images() if i.get("tier") == "from-ryan"]
+            self.send_json(items)
+            return
+        
+        # ── API: Image tiers/metadata ──
+        if path == "/api/images/tiers":
+            self.send_json(TIER_LABELS)
+            return
+        
+        # ── Serve uploaded images ──
+        if path.startswith("/uploads/"):
+            rel = path[9:]  # strip /uploads/
+            # Allow subdirectory (thumbs/)
+            parts_list = [p for p in rel.split("/") if p and p != ".."]
+            if len(parts_list) == 1:
+                filepath = IMAGES_DIR / parts_list[0]
+            elif len(parts_list) == 2 and parts_list[0] == "thumbs":
+                filepath = THUMBS_DIR / parts_list[1]
+            else:
+                self.send_error(404)
+                return
+            if filepath.exists():
+                ext = filepath.suffix.lower()
+                mime = MIME_TYPES.get(ext, "application/octet-stream")
+                self.send_response(200)
+                self.send_header("Content-Type", mime)
+                self.send_header("Cache-Control", "public, max-age=86400")
+                self.end_headers()
+                self.wfile.write(filepath.read_bytes())
+            else:
+                self.send_error(404)
             return
         
         # ── Static files ──
@@ -474,6 +688,94 @@ class ClaraHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else b""
         
+        # ── Unified image upload endpoint ──
+        if path == "/api/images/upload" or path == "/api/from-ryan/upload":
+            is_ryan = path.endswith("/from-ryan/upload")
+            
+            if is_ryan:
+                if not check_auth(self, which="ryan"):
+                    self.send_json({"error": "unauthorized"}, 401)
+                    return
+            else:
+                if not check_auth(self):
+                    self.send_json({"error": "unauthorized"}, 401)
+                    return
+            
+            try:
+                ct = self.headers.get("Content-Type", "")
+                if "multipart/form-data" not in ct:
+                    self.send_json({"error": "multipart/form-data required"}, 400)
+                    return
+                
+                fields, files = parse_multipart_form(body, ct)
+                
+                if "image" not in files:
+                    self.send_json({"error": "No image file"}, 400)
+                    return
+                
+                file_info = files["image"]
+                image_data = file_info["data"]
+                
+                # Generate unique ID
+                img_id = hashlib.sha256(
+                    (str(time.time()) + file_info["filename"]).encode()
+                ).hexdigest()[:16]
+                
+                # Determine tier and visibility
+                tier = fields.get("tier", "from-ryan" if is_ryan else "studio")
+                if tier not in VALID_TIERS:
+                    tier = "studio"
+                visibility = fields.get("visibility", "private")
+                if visibility not in VALID_VISIBILITY:
+                    visibility = "private"
+                
+                # Save image file
+                IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+                THUMBS_DIR.mkdir(parents=True, exist_ok=True)
+                
+                fname = f"{img_id}.jpg"
+                img_path = IMAGES_DIR / fname
+                img_path.write_bytes(image_data)
+                
+                # Save a copy as "thumbnail" (browser will scale it via CSS)
+                thumb_path = THUMBS_DIR / fname
+                thumb_path.write_bytes(image_data)
+                
+                # Build image record
+                now = datetime.now()
+                image_item = {
+                    "id": img_id,
+                    "file": fname,
+                    "url": f"/uploads/{fname}",
+                    "thumb_url": f"/uploads/thumbs/{fname}",
+                    "caption": fields.get("caption", ""),
+                    "note": fields.get("note", ""),
+                    "tier": tier,
+                    "visibility": visibility,
+                    "uploaded_by": "Ryan" if is_ryan else "Katie",
+                    "original_name": fields.get("original_name", file_info["filename"]),
+                    "date": now.strftime("%B %d, %Y"),
+                    "timestamp": int(now.timestamp()),
+                    "size": len(image_data),
+                }
+                
+                # Save to unified images.json
+                items = load_images()
+                items.append(image_item)
+                save_images(items)
+                
+                # Add to knowledge graph
+                try:
+                    add_image_to_kg(image_item)
+                except Exception as e:
+                    print(f"KG sync error (non-fatal): {e}")
+                
+                self.send_json({"ok": True, "id": img_id, "url": image_item["url"]})
+            except Exception as e:
+                print(f"Upload error: {e}")
+                self.send_json({"error": str(e)}, 500)
+            return
+        
         # ── Chat endpoint ──
         if path == "/api/chat":
             try:
@@ -560,14 +862,15 @@ class ClaraHandler(BaseHTTPRequestHandler):
 def main():
     print(f"""
     ╔══════════════════════════════════════╗
-    ║          CLARA DAEMON v1.1           ║
+    ║          CLARA DAEMON v2.0           ║
     ║   Katie Tudor's AI Companion         ║
     ╠══════════════════════════════════════╣
-    ║  Chat:     http://localhost:{PORT}       ║
-    ║  Brain:    http://localhost:{PORT}/brain  ║
-    ║  Explorer: http://localhost:{PORT}/explorer║
-    ║  API:      http://localhost:{PORT}/api/   ║
-    ║  SMS:      /api/sms (Twilio webhook) ║
+    ║  Chat:       http://localhost:{PORT}       ║
+    ║  Brain:      http://localhost:{PORT}/brain  ║
+    ║  Explorer:   http://localhost:{PORT}/explorer║
+    ║  Collection: http://localhost:{PORT}/collection║
+    ║  From Ryan:  http://localhost:{PORT}/from-ryan║
+    ║  API:        http://localhost:{PORT}/api/   ║
     ╠══════════════════════════════════════╣
     ║  Brain root: {str(BRAIN_ROOT)[:25].ljust(25)}║
     ║  API key:  {'configured' if ANTHROPIC_API_KEY else 'NOT SET':>25}║

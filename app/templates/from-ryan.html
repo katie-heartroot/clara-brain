@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>From Ryan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #141c17;
+  --bg2: #0f1712;
+  --surface: #1a241e;
+  --surface2: #1e2a22;
+  --border: #2d5a3d33;
+  --border-hover: #2d5a3d66;
+  --text: #dae8d8;
+  --text-dim: #7a8a78;
+  --accent: #c4854c;
+  --accent-glow: #c4854c33;
+  --gold: #c4854c;
+  --leaf: #2d5a3d;
+  --growth: #6b9e78;
+  --clay: #d4a574;
+  --linen: #f7f4ef;
+  --soil: #2c2c28;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Lora', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Password Gate ── */
+#gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+#gate .vine {
+  font-size: 2rem;
+  opacity: 0.3;
+  margin-bottom: 2rem;
+  letter-spacing: 0.5em;
+}
+#gate input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Lora', serif;
+  font-size: 1rem;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  width: 240px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.3s;
+}
+#gate input:focus { border-color: var(--accent); }
+#gate input::placeholder { color: var(--text-dim); opacity: 0.5; }
+#gate .error {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-top: 0.8rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#gate .error.show { opacity: 1; }
+
+/* ── Main Page ── */
+#main { display: none; }
+
+.header {
+  text-align: center;
+  padding: 2.5rem 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.header h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 1.8rem;
+  color: var(--clay);
+  letter-spacing: 0.05em;
+}
+.header .sub {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 0.3rem;
+  font-style: italic;
+}
+
+/* ── Upload Section ── */
+.upload-section {
+  max-width: 520px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: var(--surface);
+  position: relative;
+  overflow: hidden;
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--accent);
+  background: var(--surface2);
+}
+.drop-zone .icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.8rem;
+  opacity: 0.4;
+}
+.drop-zone .label {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+.drop-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Preview */
+.preview-area {
+  display: none;
+  margin-top: 1.2rem;
+}
+.preview-area img {
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: var(--bg2);
+}
+.preview-area .remove {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.preview-area .remove:hover { color: var(--accent); }
+
+/* Form fields */
+.field {
+  margin-top: 1.2rem;
+}
+.field label {
+  display: block;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.field input, .field textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Lora', serif;
+  font-size: 0.95rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+.field input:focus, .field textarea:focus {
+  border-color: var(--accent);
+}
+.field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.submit-btn {
+  display: block;
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.9rem;
+  background: var(--leaf);
+  color: var(--linen);
+  border: none;
+  border-radius: 8px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 0.03em;
+}
+.submit-btn:hover { background: #3a7a52; }
+.submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Success Toast ── */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--surface2);
+  border: 1px solid var(--growth);
+  color: var(--growth);
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-style: italic;
+  opacity: 0;
+  transition: all 0.5s ease;
+  z-index: 100;
+  pointer-events: none;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ── Gallery ── */
+.gallery-section {
+  max-width: 700px;
+  margin: 2.5rem auto;
+  padding: 0 1.5rem 3rem;
+}
+.gallery-section h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 1.2rem;
+  color: var(--text-dim);
+  margin-bottom: 1.2rem;
+  text-align: center;
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.gallery-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.3s, transform 0.2s;
+}
+.gallery-item:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+.gallery-item img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+}
+.gallery-item .meta {
+  padding: 0.6rem 0.8rem;
+}
+.gallery-item .caption {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.3;
+}
+.gallery-item .date {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+}
+.gallery-empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 2rem;
+  font-size: 0.9rem;
+}
+
+/* ── Lightbox ── */
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 12, 0.95);
+  z-index: 200;
+  padding: 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.lightbox.open { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.lightbox img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.lightbox .lb-caption {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.3rem;
+  color: var(--clay);
+  margin-top: 1rem;
+  text-align: center;
+}
+.lightbox .lb-note {
+  color: var(--text);
+  font-size: 0.9rem;
+  margin-top: 0.6rem;
+  max-width: 500px;
+  text-align: center;
+  line-height: 1.6;
+  font-style: italic;
+}
+.lightbox .lb-date {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  margin-top: 0.8rem;
+}
+.lightbox .lb-close {
+  position: fixed;
+  top: 1rem;
+  right: 1.2rem;
+  color: var(--text-dim);
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 210;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox .lb-close:hover { color: var(--text); }
+
+/* ── Uploading overlay ── */
+.uploading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 12, 0.85);
+  z-index: 300;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.uploading-overlay.show { display: flex; }
+.uploading-overlay .spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+.uploading-overlay .label {
+  color: var(--text-dim);
+  margin-top: 1rem;
+  font-style: italic;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .header h1 { font-size: 1.5rem; }
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
+  .drop-zone { padding: 2rem 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Password Gate -->
+<div id="gate">
+  <div class="vine">❧</div>
+  <input type="password" id="gatePassword" placeholder="password" autocomplete="off" autofocus>
+  <div class="error" id="gateError">That's not it.</div>
+</div>
+
+<!-- Main Page -->
+<div id="main">
+  <div class="header">
+    <h1>From Ryan</h1>
+    <div class="sub">Leave something for Katie to find</div>
+  </div>
+
+  <div class="upload-section">
+    <div class="drop-zone" id="dropZone">
+      <div class="icon">🌿</div>
+      <div class="label">Tap to choose a photo</div>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+
+    <div class="preview-area" id="previewArea">
+      <img id="previewImg" alt="Preview">
+      <span class="remove" id="removeBtn">remove</span>
+    </div>
+
+    <div class="field">
+      <label>Caption</label>
+      <input type="text" id="caption" placeholder="A few words about this one">
+    </div>
+
+    <div class="field">
+      <label>Note for Katie</label>
+      <textarea id="note" placeholder="Something for her to read when she finds it (optional)"></textarea>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" disabled>Leave it for her</button>
+  </div>
+
+  <div class="gallery-section">
+    <h2>What you've left so far</h2>
+    <div id="gallery" class="gallery-grid"></div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-close" id="lbClose">✕</div>
+  <img id="lbImg" alt="">
+  <div class="lb-caption" id="lbCaption"></div>
+  <div class="lb-note" id="lbNote"></div>
+  <div class="lb-date" id="lbDate"></div>
+</div>
+
+<!-- Uploading overlay -->
+<div class="uploading-overlay" id="uploading">
+  <div class="spinner"></div>
+  <div class="label">placing it gently...</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">Katie will find this.</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let password = '';
+let selectedFile = null;
+let resizedBlob = null;
+
+// ── Password Gate ──
+$('#gatePassword').addEventListener('keydown', async e => {
+  if (e.key !== 'Enter') return;
+  password = e.target.value;
+  try {
+    const r = await fetch('/api/from-ryan/items', {
+      headers: { 'X-Auth': password }
+    });
+    if (r.ok) {
+      $('#gate').style.display = 'none';
+      $('#main').style.display = 'block';
+      loadGallery();
+    } else {
+      $('#gateError').classList.add('show');
+      setTimeout(() => $('#gateError').classList.remove('show'), 2000);
+    }
+  } catch {
+    $('#gateError').textContent = 'Can\'t reach Clara right now.';
+    $('#gateError').classList.add('show');
+  }
+});
+
+// ── File Selection ──
+$('#fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) handleFile(file);
+});
+
+// Drag and drop
+const dz = $('#dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) handleFile(file);
+});
+
+function handleFile(file) {
+  selectedFile = file;
+  // Resize client-side
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 1800;
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => {
+        resizedBlob = blob;
+        $('#previewImg').src = URL.createObjectURL(blob);
+        $('#previewArea').style.display = 'block';
+        dz.style.display = 'none';
+        $('#submitBtn').disabled = false;
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+$('#removeBtn').addEventListener('click', () => {
+  selectedFile = null;
+  resizedBlob = null;
+  $('#previewArea').style.display = 'none';
+  dz.style.display = 'block';
+  $('#fileInput').value = '';
+  $('#submitBtn').disabled = true;
+});
+
+// ── Upload ──
+$('#submitBtn').addEventListener('click', async () => {
+  if (!resizedBlob) return;
+
+  const caption = $('#caption').value.trim();
+  const note = $('#note').value.trim();
+
+  $('#uploading').classList.add('show');
+  $('#submitBtn').disabled = true;
+
+  try {
+    const formData = new FormData();
+    const ext = selectedFile.name.split('.').pop() || 'jpg';
+    const fname = `from-ryan-${Date.now()}.jpg`;
+    formData.append('image', resizedBlob, fname);
+    formData.append('caption', caption);
+    formData.append('note', note);
+    formData.append('original_name', selectedFile.name);
+
+    const r = await fetch('/api/from-ryan/upload', {
+      method: 'POST',
+      headers: { 'X-Auth': password },
+      body: formData
+    });
+
+    if (r.ok) {
+      // Reset form
+      selectedFile = null;
+      resizedBlob = null;
+      $('#previewArea').style.display = 'none';
+      dz.style.display = 'block';
+      $('#fileInput').value = '';
+      $('#caption').value = '';
+      $('#note').value = '';
+      $('#submitBtn').disabled = true;
+
+      // Show toast
+      showToast();
+      // Reload gallery
+      loadGallery();
+    } else {
+      alert('Upload failed. Try again.');
+    }
+  } catch (e) {
+    alert('Something went wrong: ' + e.message);
+  } finally {
+    $('#uploading').classList.remove('show');
+  }
+});
+
+function showToast() {
+  const t = $('#toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Gallery ──
+async function loadGallery() {
+  try {
+    const r = await fetch('/api/from-ryan/items', {
+      headers: { 'X-Auth': password }
+    });
+    if (!r.ok) return;
+    const items = await r.json();
+    renderGallery(items);
+  } catch {}
+}
+
+function renderGallery(items) {
+  const g = $('#gallery');
+  if (!items.length) {
+    g.innerHTML = '<div class="gallery-empty">Nothing here yet. You\'re the first to arrive.</div>';
+    return;
+  }
+  // Most recent first
+  items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  g.innerHTML = items.map(item => `
+    <div class="gallery-item" onclick="openLightbox('${item.url}', ${JSON.stringify(JSON.stringify(item.caption || ''))}, ${JSON.stringify(JSON.stringify(item.note || ''))}, '${item.date || ''}')">
+      <img src="${item.url}" alt="${(item.caption || '').replace(/"/g, '')}" loading="lazy">
+      <div class="meta">
+        ${item.caption ? `<div class="caption">${escHtml(item.caption)}</div>` : ''}
+        <div class="date">${item.date || ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ── Lightbox ──
+function openLightbox(url, caption, note, date) {
+  $('#lbImg').src = url;
+  $('#lbCaption').textContent = caption || '';
+  $('#lbNote').textContent = note || '';
+  $('#lbDate').textContent = date || '';
+  $('#lightbox').classList.add('open');
+}
+window.openLightbox = openLightbox;
+
+$('#lbClose').addEventListener('click', () => {
+  $('#lightbox').classList.remove('open');
+});
+$('#lightbox').addEventListener('click', e => {
+  if (e.target === $('#lightbox')) $('#lightbox').classList.remove('open');
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') $('#lightbox').classList.remove('open');
+});
+</script>
+</body>
+</html>

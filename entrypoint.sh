@@ -6,7 +6,7 @@ BRAIN_SRC="/app/brain"
 BRAIN_DST="/data/brain"
 
 # Create directories on persistent volume
-mkdir -p "$BRAIN_DST/memory" "$BRAIN_DST/sessions"
+mkdir -p "$BRAIN_DST/memory" "$BRAIN_DST/sessions" "$BRAIN_DST/images/thumbs"
 
 # Sync brain files (don't overwrite sessions — those are live data)
 for f in CLARA-SOUL.md CONTEXT.md GOALS.md WINS.md NEXT.md MEMORY.md BOOTSTRAP.md README.md knowledge.json; do
