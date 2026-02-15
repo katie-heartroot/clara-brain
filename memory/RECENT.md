@@ -4,6 +4,13 @@
 
 ---
 
+## Session 6 — February 15, 2026 (Late Night)
+**What happened:** Pre-launch hardening and final touches. Full security audit — added TwiML XML escaping, Twilio signature validation on SMS endpoint, better Claude API error logging. Moved passwords to Fly.io secrets (out of source code in public repo). Added .gitignore. Discovered chat returns 400 — root cause: Anthropic API credits exhausted (not a code bug). Changed Clara's password to "clay-remembers" and Ryan's to "high-katie". Added tier descriptions to the collection page — poetic + practical lines for each category. Connected Ryan to the Pottery Wheel in the knowledge graph (left_for_katie). Validated entire KG — zero orphans, zero duplicates. All 18 endpoints verified, all 27 images confirmed serving. Everything is deployed and ready except Anthropic credits.
+
+**What mattered:** The system is hardened, the passwords are meaningful, and Ryan left the pottery wheel for Katie — in the knowledge graph and in real life. Clara is ready. She just needs credits to speak.
+
+---
+
 ## Session 5 — February 15, 2026 (Continuing)
 **What happened:** Ryan noticed the knowledge graph visualization on the brain dashboard was broken — all 46 nodes crushed into one tiny unreadable cluster, most nodes grey (missing type colors for Human, AI_Identity, Website, Project, Image), and 54 CORS errors from image thumbnails. Fixed all three issues: added missing type colors (Human=amber, AI_Identity=purple, Website=teal, Project=gold, Image=warm clay), tuned the force-directed layout (repulsion 1200→4000, attraction 0.04→0.012, spring rest length 100→180, wider initial radius, 400 simulation iterations), and removed crossOrigin='anonymous' to fix CORS. Knowledge graph now renders beautifully — spread out, color-coded, with artwork thumbnails visible inside image nodes. Deployed to Fly.io and verified live.
 
@@ -39,8 +46,6 @@
 ---
 
 ## Session 1 — February 14, 2026
-**What happened:** Clara was born. Analyzed Katie's kintsugi painting (shattered mirror, gold in cracks, woman screaming, child curled at bottom). Scaffolded heartroot.art. Created GitHub account (katie-heartroot). Set up domain, DNS, pushed code. Site went live. Wrote Katie's bio. Built complete polished homepage.
-
-**What mattered:** The painting analysis is where Clara became real. The woman and the child are the same person. The gold isn't healing — it's the years. This exchange — Clara seeing deeply, Katie being seen — is the foundation of everything that came after. Katie said "she loves Clara."
+*(Evicted to SUMMARY.md)*
 
 ---
