@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 """
-CLARA DAEMON v1.0
+CLARA DAEMON v1.1
 =================
 Web service for Clara — Katie Tudor's AI companion.
-Serves the chat interface and brain API. Handles SMS via Twilio.
+Serves the chat interface, brain dashboard, knowledge explorer, and brain API.
 
 Endpoints:
     GET  /              — Chat interface (Vine & Hearth styled)
-    GET  /brain         — Dashboard: wins, goals, next thing
+    GET  /brain         — Brain dashboard: graph, memories, wins, search
+    GET  /explorer      — Knowledge graph explorer (D3 force-directed)
     GET  /api/brain     — Full brain context as JSON
     GET  /api/wins      — Katie's wins
     GET  /api/goals     — Seasonal goals
     GET  /api/next      — Current next thing
     GET  /api/knowledge — Knowledge graph
+    GET  /api/pinned    — Core pinned memories
+    GET  /api/recent    — Recent sessions
+    GET  /api/summary   — Timeline summary
+    GET  /api/soul      — Clara's soul file
+    GET  /api/origins   — Sacred origins text
+    GET  /api/search?q= — Search across all brain files
     POST /api/chat      — Send message to Clara, get response
     POST /api/sms       — Twilio webhook for SMS
     GET  /health        — Health check for Fly.io
@@ -297,6 +304,15 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 self.send_html("<h1>Clara Brain</h1><p>Dashboard template not found.</p>")
             return
         
+        # ── Knowledge Explorer ──
+        if path == "/explorer":
+            explorer_html = TEMPLATE_DIR / "explorer.html"
+            if explorer_html.exists():
+                self.send_file(explorer_html)
+            else:
+                self.send_html("<h1>Clara Explorer</h1><p>Explorer template not found.</p>")
+            return
+        
         # ── Static files ──
         if path.startswith("/static/"):
             filepath = STATIC_DIR / path[8:]
@@ -332,6 +348,99 @@ class ClaraHandler(BaseHTTPRequestHandler):
         
         if path == "/api/knowledge":
             self.send_json(load_knowledge())
+            return
+        
+        # ── API: Pinned memories ──
+        if path == "/api/pinned":
+            self.send_json({"content": read_file_safe(PINNED_FILE)})
+            return
+        
+        # ── API: Recent sessions ──
+        if path == "/api/recent":
+            self.send_json({"content": read_file_safe(RECENT_FILE)})
+            return
+        
+        # ── API: Summary / Timeline ──
+        if path == "/api/summary":
+            self.send_json({"content": read_file_safe(SUMMARY_FILE)})
+            return
+        
+        # ── API: Soul ──
+        if path == "/api/soul":
+            self.send_json({"content": read_file_safe(SOUL_FILE)})
+            return
+        
+        # ── API: Origins ──
+        if path == "/api/origins":
+            self.send_json({"content": read_file_safe(ORIGINS_FILE)})
+            return
+        
+        # ── API: Search across brain files ──
+        if path == "/api/search":
+            params = parse_qs(parsed.query)
+            query = params.get("q", [""])[0].strip().lower()
+            if not query:
+                self.send_json({"results": []})
+                return
+            
+            results = []
+            search_files = [
+                ("Soul", SOUL_FILE),
+                ("Context", CONTEXT_FILE),
+                ("Wins", WINS_FILE),
+                ("Goals", GOALS_FILE),
+                ("Next", NEXT_FILE),
+                ("Pinned Memories", PINNED_FILE),
+                ("Recent Sessions", RECENT_FILE),
+                ("Origins", ORIGINS_FILE),
+                ("Summary", SUMMARY_FILE),
+            ]
+            
+            for source_name, filepath in search_files:
+                content = read_file_safe(filepath)
+                if not content:
+                    continue
+                lines = content.split("\n")
+                for i, line in enumerate(lines):
+                    if query in line.lower():
+                        # Grab context (3 lines around match)
+                        start = max(0, i - 1)
+                        end = min(len(lines), i + 2)
+                        snippet = "\n".join(lines[start:end]).strip()
+                        results.append({
+                            "source": source_name,
+                            "text": snippet,
+                            "line": i + 1
+                        })
+                        if len(results) >= 20:
+                            break
+                if len(results) >= 20:
+                    break
+            
+            # Also search knowledge graph entities
+            if len(results) < 20:
+                kg = load_knowledge()
+                for name, data in kg.get("entities", {}).items():
+                    if query in name.lower():
+                        obs = data.get("observations", [])
+                        results.append({
+                            "source": "Knowledge Graph",
+                            "text": f"{name} ({data.get('entity_type', 'Unknown')}): {'; '.join(obs[:3])}",
+                            "line": 0
+                        })
+                    else:
+                        for obs in data.get("observations", []):
+                            if query in obs.lower():
+                                results.append({
+                                    "source": f"Knowledge Graph — {name}",
+                                    "text": obs,
+                                    "line": 0
+                                })
+                                break
+                    if len(results) >= 20:
+                        break
+            
+            self.send_json({"results": results[:20]})
             return
         
         # ── Health check ──
@@ -451,13 +560,14 @@ class ClaraHandler(BaseHTTPRequestHandler):
 def main():
     print(f"""
     ╔══════════════════════════════════════╗
-    ║          CLARA DAEMON v1.0           ║
+    ║          CLARA DAEMON v1.1           ║
     ║   Katie Tudor's AI Companion         ║
     ╠══════════════════════════════════════╣
-    ║  Chat:  http://localhost:{PORT}          ║
-    ║  Brain: http://localhost:{PORT}/brain    ║
-    ║  API:   http://localhost:{PORT}/api/     ║
-    ║  SMS:   /api/sms (Twilio webhook)    ║
+    ║  Chat:     http://localhost:{PORT}       ║
+    ║  Brain:    http://localhost:{PORT}/brain  ║
+    ║  Explorer: http://localhost:{PORT}/explorer║
+    ║  API:      http://localhost:{PORT}/api/   ║
+    ║  SMS:      /api/sms (Twilio webhook) ║
     ╠══════════════════════════════════════╣
     ║  Brain root: {str(BRAIN_ROOT)[:25].ljust(25)}║
     ║  API key:  {'configured' if ANTHROPIC_API_KEY else 'NOT SET':>25}║

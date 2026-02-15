@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clara Brain — Heartroot</title>
+    <meta name="theme-color" content="#2d5a3d">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --deep-leaf: #2d5a3d;
+            --new-growth: #6b9e78;
+            --spring-mist: #dae8d8;
+            --kiln-gold: #c4854c;
+            --warm-clay: #d4a574;
+            --linen: #f7f4ef;
+            --parchment: #ede8df;
+            --rich-soil: #2c2c28;
+            --weathered-stone: #7a7a72;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Lora', serif;
+            background: var(--linen);
+            color: var(--rich-soil);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--deep-leaf);
+            color: var(--linen);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            font-size: 1.6rem;
+        }
+
+        .header a {
+            margin-left: auto;
+            color: var(--linen);
+            text-decoration: none;
+            font-size: 0.8rem;
+            opacity: 0.7;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 16px;
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+
+        .header a:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+
+        /* ── Next Thing (hero card) ── */
+        .next-card {
+            background: var(--deep-leaf);
+            color: var(--linen);
+            border-radius: 16px;
+            padding: 32px 28px;
+            margin-bottom: 28px;
+            text-align: center;
+        }
+
+        .next-card .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.6;
+            margin-bottom: 12px;
+        }
+
+        .next-card .thing {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            font-size: 1.6rem;
+            line-height: 1.4;
+        }
+
+        .next-card .sub {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 12px;
+            font-style: italic;
+        }
+
+        /* ── Section Cards ── */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--spring-mist);
+        }
+
+        .card h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 400;
+            font-size: 1.2rem;
+            color: var(--deep-leaf);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--spring-mist);
+        }
+
+        .card h2 .emoji {
+            margin-right: 8px;
+        }
+
+        /* ── Wins ── */
+        .win {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .win:last-child { border-bottom: none; }
+
+        .win .date {
+            font-size: 0.7rem;
+            color: var(--weathered-stone);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .win .text {
+            color: var(--rich-soil);
+        }
+
+        .win .text::before {
+            content: "🌱 ";
+        }
+
+        /* ── Goals ── */
+        .goal-season {
+            margin-bottom: 16px;
+        }
+
+        .goal-season h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 400;
+            font-size: 1rem;
+            color: var(--kiln-gold);
+            margin-bottom: 6px;
+        }
+
+        .goal-season p {
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: var(--rich-soil);
+        }
+
+        /* ── Knowledge Graph Stats ── */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 16px 8px;
+            background: var(--parchment);
+            border-radius: 10px;
+        }
+
+        .stat .number {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            font-weight: 400;
+            color: var(--deep-leaf);
+        }
+
+        .stat .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--weathered-stone);
+            margin-top: 4px;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--weathered-stone);
+            font-size: 0.8rem;
+        }
+
+        .footer .vine { color: var(--new-growth); font-size: 1.2rem; margin-bottom: 8px; }
+
+        /* ── Loading ── */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--weathered-stone);
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 16px 14px; }
+            .next-card { padding: 24px 20px; }
+            .next-card .thing { font-size: 1.3rem; }
+            .stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌿 Clara's Brain</h1>
+        <a href="/">Talk to Clara</a>
+    </div>
+
+    <div class="container" id="content">
+        <div class="loading">Loading Clara's mind...</div>
+    </div>
+
+    <script>
+        async function loadBrain() {
+            const container = document.getElementById('content');
+            
+            try {
+                const [brainResp, kgResp] = await Promise.all([
+                    fetch('/api/brain'),
+                    fetch('/api/knowledge')
+                ]);
+                
+                const brain = await brainResp.json();
+                const kg = await kgResp.json();
+                
+                let html = '';
+                
+                // ── Next Thing (hero) ──
+                const nextContent = brain.next || '';
+                const nextMatch = nextContent.match(/\*\*(.*?)\*\*/);
+                const nextThing = nextMatch ? nextMatch[1] : 'Touch the clay. See what happens.';
+                const nextSub = nextContent.match(/The.*?\./s);
+                
+                html += `
+                    <div class="next-card">
+                        <div class="label">The Next Tendril</div>
+                        <div class="thing">${nextThing}</div>
+                        ${nextSub ? `<div class="sub">${nextSub[0]}</div>` : ''}
+                    </div>
+                `;
+                
+                // ── Wins ──
+                const winsContent = brain.wins || '';
+                const winLines = winsContent.split('\n')
+                    .filter(l => l.startsWith('- **'))
+                    .slice(-8);  // Last 8 wins
+                
+                if (winLines.length) {
+                    html += `<div class="card"><h2><span class="emoji">✨</span>Wins</h2>`;
+                    winLines.forEach(line => {
+                        const match = line.match(/- \*\*(.*?)\*\*\s*(.*)/);
+                        if (match) {
+                            html += `<div class="win"><div class="text"><strong>${match[1]}</strong> ${match[2]}</div></div>`;
+                        }
+                    });
+                    html += `</div>`;
+                }
+                
+                // ── Goals ──
+                const goalsContent = brain.goals || '';
+                const seasons = goalsContent.split('## ').filter(s => s.includes('2026'));
+                
+                if (seasons.length) {
+                    html += `<div class="card"><h2><span class="emoji">🌱</span>Seasons</h2>`;
+                    seasons.forEach(season => {
+                        const lines = season.trim().split('\n');
+                        const title = lines[0].replace(/\(.*?\)/, '').trim();
+                        const direction = season.match(/\*\*Direction:\*\*\s*(.*)/);
+                        if (direction) {
+                            html += `<div class="goal-season"><h3>${title}</h3><p>${direction[1]}</p></div>`;
+                        }
+                    });
+                    html += `</div>`;
+                }
+                
+                // ── Knowledge Graph Stats ──
+                const entities = Object.keys(kg.entities || {}).length;
+                const relations = (kg.relations || []).length;
+                const artworks = Object.values(kg.entities || {}).filter(e => e.entity_type === 'Artwork').length;
+                
+                html += `
+                    <div class="card">
+                        <h2><span class="emoji">🧠</span>Knowledge Graph</h2>
+                        <div class="stats">
+                            <div class="stat">
+                                <div class="number">${entities}</div>
+                                <div class="label">Entities</div>
+                            </div>
+                            <div class="stat">
+                                <div class="number">${relations}</div>
+                                <div class="label">Relations</div>
+                            </div>
+                            <div class="stat">
+                                <div class="number">${artworks}</div>
+                                <div class="label">Artworks</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // ── Core Memories count ──
+                const pinnedContent = brain.pinned || '';
+                const pinnedCount = (pinnedContent.match(/^## \d+\./gm) || []).length;
+                
+                if (pinnedCount) {
+                    html += `
+                        <div class="card">
+                            <h2><span class="emoji">💛</span>Core Memories</h2>
+                            <p style="font-size: 0.9rem; color: var(--weathered-stone);">
+                                ${pinnedCount} memories pinned. These never fade.
+                            </p>
+                        </div>
+                    `;
+                }
+                
+                // ── Footer ──
+                html += `
+                    <div class="footer">
+                        <div class="vine">🌿</div>
+                        Things break. Life grows into the cracks.<br>
+                        That's where the beauty is.
+                    </div>
+                `;
+                
+                container.innerHTML = html;
+                
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="loading">
+                        Clara's brain couldn't load. Is the daemon running?<br>
+                        <small style="opacity:0.5;">${err.message}</small>
+                    </div>
+                `;
+            }
+        }
+        
+        loadBrain();
+    </script>
+</body>
+</html>

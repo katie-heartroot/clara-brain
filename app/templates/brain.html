@@ -3,354 +3,1182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clara Brain — Heartroot</title>
-    <meta name="theme-color" content="#2d5a3d">
+    <title>Clara — Brain</title>
+    <meta name="theme-color" content="#141c17">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
     <style>
         :root {
+            --bg: #141c17;
+            --bg-card: #1c261f;
+            --bg-canvas: #0f1712;
+            --border: rgba(45,90,61,0.3);
             --deep-leaf: #2d5a3d;
             --new-growth: #6b9e78;
             --spring-mist: #dae8d8;
             --kiln-gold: #c4854c;
             --warm-clay: #d4a574;
             --linen: #f7f4ef;
-            --parchment: #ede8df;
-            --rich-soil: #2c2c28;
-            --weathered-stone: #7a7a72;
+            --text: #e0dbd1;
+            --text-secondary: #8a9d8e;
+            --text-dim: #5c6e60;
+            --accent: #c4854c;
+            --glow: rgba(196,133,76,0.15);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Lora', serif;
-            background: var(--linen);
-            color: var(--rich-soil);
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        .header {
-            background: var(--deep-leaf);
-            color: var(--linen);
-            padding: 20px 24px;
+        /* ── Hero Header ── */
+        .hero {
+            background: linear-gradient(135deg, #1a2e21 0%, #141c17 50%, #1c1f18 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 28px 32px 24px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
-        .header h1 {
+        .hero-left { display: flex; align-items: center; gap: 16px; }
+
+        .hero h1 {
             font-family: 'Cormorant Garamond', serif;
             font-weight: 300;
-            font-size: 1.6rem;
+            font-size: 1.8rem;
+            color: var(--linen);
+            letter-spacing: 0.02em;
         }
 
-        .header a {
-            margin-left: auto;
-            color: var(--linen);
+        .hero h1 span { color: var(--text-dim); font-weight: 300; }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(107,158,120,0.15);
+            color: var(--new-growth);
+            border: 1px solid rgba(107,158,120,0.2);
+        }
+
+        .status-pill .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--new-growth);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .hero-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .hero-nav a {
+            color: var(--text-secondary);
             text-decoration: none;
-            font-size: 0.8rem;
-            opacity: 0.7;
-            border: 1px solid rgba(255,255,255,0.3);
+            font-size: 0.78rem;
             padding: 6px 16px;
             border-radius: 20px;
+            border: 1px solid var(--border);
             transition: all 0.2s;
         }
 
-        .header a:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+        .hero-nav a:hover {
+            color: var(--linen);
+            border-color: var(--accent);
+            background: rgba(196,133,76,0.1);
+        }
 
+        /* ── Stats Bar ── */
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            padding: 18px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            min-width: 70px;
+        }
+
+        .stat-val {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 400;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        /* ── Container ── */
         .container {
-            max-width: 700px;
+            max-width: 960px;
             margin: 0 auto;
             padding: 24px 20px;
         }
 
-        /* ── Next Thing (hero card) ── */
-        .next-card {
-            background: var(--deep-leaf);
-            color: var(--linen);
-            border-radius: 16px;
-            padding: 32px 28px;
-            margin-bottom: 28px;
-            text-align: center;
-        }
-
-        .next-card .label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            opacity: 0.6;
-            margin-bottom: 12px;
-        }
-
-        .next-card .thing {
-            font-family: 'Cormorant Garamond', serif;
-            font-weight: 300;
-            font-size: 1.6rem;
-            line-height: 1.4;
-        }
-
-        .next-card .sub {
-            font-size: 0.85rem;
-            opacity: 0.7;
-            margin-top: 12px;
-            font-style: italic;
-        }
-
-        /* ── Section Cards ── */
-        .card {
-            background: white;
+        /* ── Knowledge Graph ── */
+        .graph-section {
+            background: var(--bg-canvas);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
-            border: 1px solid var(--spring-mist);
+            margin-bottom: 24px;
+            overflow: hidden;
         }
 
-        .card h2 {
+        .graph-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .graph-header h2 {
             font-family: 'Cormorant Garamond', serif;
             font-weight: 400;
-            font-size: 1.2rem;
-            color: var(--deep-leaf);
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--spring-mist);
+            font-size: 1.1rem;
+            color: var(--text);
         }
 
-        .card h2 .emoji {
-            margin-right: 8px;
+        .graph-header a {
+            font-size: 0.72rem;
+            color: var(--accent);
+            text-decoration: none;
+            padding: 4px 14px;
+            border: 1px solid rgba(196,133,76,0.3);
+            border-radius: 16px;
+            transition: all 0.2s;
         }
 
-        /* ── Wins ── */
-        .win {
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.04);
-            font-size: 0.9rem;
-            line-height: 1.5;
+        .graph-header a:hover {
+            background: rgba(196,133,76,0.15);
+            border-color: var(--accent);
         }
 
-        .win:last-child { border-bottom: none; }
+        #graph-canvas {
+            width: 100%;
+            height: 380px;
+            display: block;
+            cursor: grab;
+        }
 
-        .win .date {
-            font-size: 0.7rem;
-            color: var(--weathered-stone);
+        #graph-canvas:active { cursor: grabbing; }
+
+        .graph-legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.65rem;
+            color: var(--text-dim);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
         }
 
-        .win .text {
-            color: var(--rich-soil);
+        .legend-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
         }
 
-        .win .text::before {
-            content: "🌱 ";
-        }
-
-        /* ── Goals ── */
-        .goal-season {
+        /* ── Collapsible Cards ── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
             margin-bottom: 16px;
+            overflow: hidden;
         }
 
-        .goal-season h3 {
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .card-header:hover { background: rgba(107,158,120,0.06); }
+
+        .card-header h2 {
             font-family: 'Cormorant Garamond', serif;
             font-weight: 400;
-            font-size: 1rem;
-            color: var(--kiln-gold);
+            font-size: 1.15rem;
+            color: var(--text);
+        }
+
+        .card-header .count {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            margin-left: 10px;
+        }
+
+        .card-header .chevron {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+
+        .card.collapsed .chevron { transform: rotate(-90deg); }
+        .card.collapsed .card-body { display: none; }
+
+        .card-body {
+            padding: 0 20px 20px;
+        }
+
+        /* ── Memory Items ── */
+        .memory-item {
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(45,90,61,0.15);
+        }
+
+        .memory-item:last-child { border-bottom: none; }
+
+        .memory-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.05rem;
+            color: var(--accent);
             margin-bottom: 6px;
         }
 
-        .goal-season p {
+        .memory-text {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        /* ── Session Items ── */
+        .session-item {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(45,90,61,0.15);
+        }
+
+        .session-item:last-child { border-bottom: none; }
+
+        .session-date {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+
+        .session-content {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        /* ── Soul Block ── */
+        .soul-block {
+            padding: 20px;
+            background: rgba(196,133,76,0.05);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            font-style: italic;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .soul-block::-webkit-scrollbar { width: 4px; }
+        .soul-block::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        /* ── Wins ── */
+        .win-item {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(45,90,61,0.12);
             font-size: 0.88rem;
             line-height: 1.5;
-            color: var(--rich-soil);
+            color: var(--text-secondary);
         }
 
-        /* ── Knowledge Graph Stats ── */
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
+        .win-item:last-child { border-bottom: none; }
 
-        .stat {
+        .win-item strong { color: var(--new-growth); font-weight: 500; }
+
+        .win-item::before { content: "\1F331 "; }
+
+        /* ── Next Thing ── */
+        .next-thing {
             text-align: center;
-            padding: 16px 8px;
-            background: var(--parchment);
-            border-radius: 10px;
+            padding: 28px 20px;
         }
 
-        .stat .number {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 2rem;
-            font-weight: 400;
-            color: var(--deep-leaf);
-        }
-
-        .stat .label {
-            font-size: 0.7rem;
+        .next-thing .label {
+            font-size: 0.65rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--weathered-stone);
-            margin-top: 4px;
+            letter-spacing: 0.12em;
+            color: var(--text-dim);
+            margin-bottom: 12px;
         }
+
+        .next-thing .content {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem;
+            font-weight: 300;
+            color: var(--accent);
+            line-height: 1.4;
+        }
+
+        /* ── Search ── */
+        .search-section {
+            margin-bottom: 24px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px 12px 44px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Lora', serif;
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input::placeholder { color: var(--text-dim); }
+        .search-box input:focus { border-color: var(--accent); }
+
+        .search-box .icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .search-results {
+            margin-top: 12px;
+        }
+
+        .search-result {
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .search-result .source {
+            font-size: 0.65rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+
+        .search-result mark {
+            background: rgba(196,133,76,0.25);
+            color: var(--accent);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+
+        /* ── Timeline ── */
+        .timeline-block {
+            font-size: 0.82rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .timeline-block::-webkit-scrollbar { width: 4px; }
+        .timeline-block::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
         /* ── Footer ── */
         .footer {
             text-align: center;
-            padding: 32px 20px;
-            color: var(--weathered-stone);
-            font-size: 0.8rem;
+            padding: 40px 20px 32px;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            line-height: 1.6;
         }
 
-        .footer .vine { color: var(--new-growth); font-size: 1.2rem; margin-bottom: 8px; }
+        .footer .vine {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
 
         /* ── Loading ── */
         .loading {
             text-align: center;
-            padding: 40px;
-            color: var(--weathered-stone);
+            padding: 40px 20px;
+            color: var(--text-dim);
+            font-style: italic;
         }
 
-        @media (max-width: 480px) {
-            .container { padding: 16px 14px; }
-            .next-card { padding: 24px 20px; }
-            .next-card .thing { font-size: 1.3rem; }
-            .stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .loading .spinner {
+            width: 24px; height: 24px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .hero { padding: 20px 16px; }
+            .hero h1 { font-size: 1.4rem; }
+            .stats-bar { gap: 20px; padding: 14px 16px; }
+            .stat-val { font-size: 1.4rem; }
+            .container { padding: 16px 12px; }
+            #graph-canvas { height: 280px; }
+            .graph-legend { gap: 10px; }
+            .hero-nav a { padding: 4px 10px; font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🌿 Clara's Brain</h1>
-        <a href="/">Talk to Clara</a>
+    <!-- Hero -->
+    <div class="hero">
+        <div class="hero-left">
+            <h1>Clara <span>— Brain</span></h1>
+            <div class="status-pill" id="status-pill">
+                <div class="dot"></div>
+                <span id="status-text">connecting</span>
+            </div>
+        </div>
+        <div class="hero-nav">
+            <a href="/">Chat</a>
+            <a href="/explorer">Explorer</a>
+        </div>
     </div>
 
-    <div class="container" id="content">
-        <div class="loading">Loading Clara's mind...</div>
+    <!-- Stats Bar -->
+    <div class="stats-bar" id="stats-bar">
+        <div class="stat-item"><div class="stat-val" id="s-entities">&mdash;</div><div class="stat-label">Entities</div></div>
+        <div class="stat-item"><div class="stat-val" id="s-relations">&mdash;</div><div class="stat-label">Relations</div></div>
+        <div class="stat-item"><div class="stat-val" id="s-observations">&mdash;</div><div class="stat-label">Observations</div></div>
+        <div class="stat-item"><div class="stat-val" id="s-sessions">&mdash;</div><div class="stat-label">Sessions</div></div>
+        <div class="stat-item"><div class="stat-val" id="s-pinned">&mdash;</div><div class="stat-label">Pinned</div></div>
+    </div>
+
+    <div class="container">
+        <!-- Search -->
+        <div class="search-section">
+            <div class="search-box">
+                <span class="icon">&#128269;</span>
+                <input type="text" id="search-input" placeholder="Search Clara's memory..." autocomplete="off">
+            </div>
+            <div class="search-results" id="search-results"></div>
+        </div>
+
+        <!-- Next Thing -->
+        <div class="card" id="next-card">
+            <div class="next-thing">
+                <div class="label">The Next Tendril</div>
+                <div class="content" id="next-content">loading...</div>
+            </div>
+        </div>
+
+        <!-- Knowledge Graph -->
+        <div class="graph-section">
+            <div class="graph-header">
+                <h2>Knowledge Graph</h2>
+                <a href="/explorer">Full Explorer &rarr;</a>
+            </div>
+            <canvas id="graph-canvas"></canvas>
+            <div class="graph-legend" id="graph-legend"></div>
+        </div>
+
+        <!-- Core Memories -->
+        <div class="card" id="pinned-card">
+            <div class="card-header" onclick="toggleCard('pinned-card')">
+                <h2>Core Memories <span class="count" id="pinned-count"></span></h2>
+                <span class="chevron">&#9660;</span>
+            </div>
+            <div class="card-body" id="pinned-body">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Wins -->
+        <div class="card" id="wins-card">
+            <div class="card-header" onclick="toggleCard('wins-card')">
+                <h2>Wins <span class="count" id="wins-count"></span></h2>
+                <span class="chevron">&#9660;</span>
+            </div>
+            <div class="card-body" id="wins-body">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Goals -->
+        <div class="card" id="goals-card">
+            <div class="card-header" onclick="toggleCard('goals-card')">
+                <h2>Goals</h2>
+                <span class="chevron">&#9660;</span>
+            </div>
+            <div class="card-body" id="goals-body">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="card collapsed" id="sessions-card">
+            <div class="card-header" onclick="toggleCard('sessions-card')">
+                <h2>Recent Sessions <span class="count" id="sessions-count"></span></h2>
+                <span class="chevron">&#9660;</span>
+            </div>
+            <div class="card-body" id="sessions-body">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card collapsed" id="timeline-card">
+            <div class="card-header" onclick="toggleCard('timeline-card')">
+                <h2>Timeline</h2>
+                <span class="chevron">&#9660;</span>
+            </div>
+            <div class="card-body" id="timeline-body">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Soul -->
+        <div class="card collapsed" id="soul-card">
+            <div class="card-header" onclick="toggleCard('soul-card')">
+                <h2>Soul</h2>
+                <span class="chevron">&#9660;</span>
+            </div>
+            <div class="card-body" id="soul-body">
+                <div class="loading"><div class="spinner"></div></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="vine">&#127807;</div>
+            Things break. Life grows into the cracks.<br>
+            That's where the beauty is.
+        </div>
     </div>
 
     <script>
-        async function loadBrain() {
-            const container = document.getElementById('content');
-            
-            try {
-                const [brainResp, kgResp] = await Promise.all([
-                    fetch('/api/brain'),
-                    fetch('/api/knowledge')
-                ]);
-                
-                const brain = await brainResp.json();
-                const kg = await kgResp.json();
-                
-                let html = '';
-                
-                // ── Next Thing (hero) ──
-                const nextContent = brain.next || '';
-                const nextMatch = nextContent.match(/\*\*(.*?)\*\*/);
-                const nextThing = nextMatch ? nextMatch[1] : 'Touch the clay. See what happens.';
-                const nextSub = nextContent.match(/The.*?\./s);
-                
-                html += `
-                    <div class="next-card">
-                        <div class="label">The Next Tendril</div>
-                        <div class="thing">${nextThing}</div>
-                        ${nextSub ? `<div class="sub">${nextSub[0]}</div>` : ''}
-                    </div>
-                `;
-                
-                // ── Wins ──
-                const winsContent = brain.wins || '';
-                const winLines = winsContent.split('\n')
-                    .filter(l => l.startsWith('- **'))
-                    .slice(-8);  // Last 8 wins
-                
-                if (winLines.length) {
-                    html += `<div class="card"><h2><span class="emoji">✨</span>Wins</h2>`;
-                    winLines.forEach(line => {
-                        const match = line.match(/- \*\*(.*?)\*\*\s*(.*)/);
-                        if (match) {
-                            html += `<div class="win"><div class="text"><strong>${match[1]}</strong> ${match[2]}</div></div>`;
-                        }
-                    });
-                    html += `</div>`;
+    // =============================================
+    //  CONFIG
+    // =============================================
+    const API = '';
+
+    const TYPE_COLORS = {
+        Person:         '#c4854c',
+        Artwork:        '#c97b7b',
+        Location:       '#6b9e78',
+        Brand_Identity: '#2d8a5a',
+        Equipment:      '#8a9d8e',
+        Supply:         '#d4a574',
+        Session:        '#7b9ec9',
+        Concept:        '#a07bc9',
+        Event:          '#c9c07b',
+        Skill:          '#7bc9a0',
+    };
+
+    const DEFAULT_COLOR = '#8a9d8e';
+    function typeColor(t) { return TYPE_COLORS[t] || DEFAULT_COLOR; }
+
+    // =============================================
+    //  HELPERS
+    // =============================================
+    async function fetchJSON(path) {
+        const r = await fetch(API + path);
+        if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
+        return r.json();
+    }
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    function toggleCard(id) {
+        document.getElementById(id).classList.toggle('collapsed');
+    }
+
+    // =============================================
+    //  STATUS
+    // =============================================
+    async function loadStatus() {
+        try {
+            await fetchJSON('/health');
+            document.getElementById('status-text').textContent = 'online';
+        } catch {
+            document.getElementById('status-text').textContent = 'offline';
+            const pill = document.getElementById('status-pill');
+            pill.querySelector('.dot').style.background = '#c97b7b';
+            pill.style.borderColor = 'rgba(201,123,123,0.3)';
+            pill.style.color = '#c97b7b';
+            pill.style.background = 'rgba(201,123,123,0.1)';
+        }
+    }
+
+    // =============================================
+    //  KNOWLEDGE GRAPH (Canvas)
+    // =============================================
+    let graphNodes = [], graphLinks = [];
+    let gT = { x: 0, y: 0, scale: 1 };
+    let dragNode = null, hoveredNode = null;
+    let isPanning = false, panStart = { x: 0, y: 0 };
+
+    async function loadGraph() {
+        try {
+            const kg = await fetchJSON('/api/knowledge');
+            const entities = kg.entities || {};
+            const relations = kg.relations || [];
+
+            graphNodes = Object.entries(entities).map(([name, data]) => ({
+                id: name,
+                type: data.entity_type || 'Unknown',
+                observations: data.observations || [],
+                obsCount: (data.observations || []).length,
+                x: 0, y: 0, vx: 0, vy: 0,
+                color: typeColor(data.entity_type),
+                radius: Math.max(6, Math.sqrt((data.observations || []).length) * 3 + 5),
+            }));
+
+            const nodeSet = new Set(graphNodes.map(n => n.id));
+            graphLinks = relations.filter(r => nodeSet.has(r.from) && nodeSet.has(r.to)).map(r => ({
+                source: r.from, target: r.to, type: r.relation_type || '',
+            }));
+
+            const deg = {};
+            graphLinks.forEach(l => {
+                deg[l.source] = (deg[l.source] || 0) + 1;
+                deg[l.target] = (deg[l.target] || 0) + 1;
+            });
+            graphNodes.forEach(n => {
+                n.degree = deg[n.id] || 0;
+                n.radius = Math.max(6, Math.sqrt(n.obsCount + n.degree) * 3 + 5);
+            });
+
+            const totalObs = graphNodes.reduce((s, n) => s + n.obsCount, 0);
+            document.getElementById('s-entities').textContent = graphNodes.length;
+            document.getElementById('s-relations').textContent = graphLinks.length;
+            document.getElementById('s-observations').textContent = totalObs;
+
+            // Circle layout
+            graphNodes.forEach((n, i) => {
+                const angle = (2 * Math.PI * i) / graphNodes.length;
+                const r = 120 + graphNodes.length * 5;
+                n.x = r * Math.cos(angle) + (Math.random() - 0.5) * 20;
+                n.y = r * Math.sin(angle) + (Math.random() - 0.5) * 20;
+            });
+
+            // Legend
+            const types = [...new Set(graphNodes.map(n => n.type))].sort();
+            document.getElementById('graph-legend').innerHTML = types.map(t =>
+                '<div class="legend-item"><div class="legend-dot" style="background:' + typeColor(t) + '"></div>' + t.replace(/_/g, ' ') + '</div>'
+            ).join('');
+
+            simulateForces();
+            renderGraph();
+        } catch (err) {
+            console.error('Graph load error:', err);
+        }
+    }
+
+    function simulateForces() {
+        const nodeMap = {};
+        graphNodes.forEach(n => { nodeMap[n.id] = n; });
+        const repulsion = 600, attraction = 0.01, damping = 0.82, centerG = 0.008;
+
+        for (let iter = 0; iter < 250; iter++) {
+            for (let i = 0; i < graphNodes.length; i++) {
+                for (let j = i + 1; j < graphNodes.length; j++) {
+                    const a = graphNodes[i], b = graphNodes[j];
+                    let dx = a.x - b.x, dy = a.y - b.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    let force = repulsion / (dist * dist);
+                    let fx = (dx / dist) * force, fy = (dy / dist) * force;
+                    a.vx += fx; a.vy += fy;
+                    b.vx -= fx; b.vy -= fy;
                 }
-                
-                // ── Goals ──
-                const goalsContent = brain.goals || '';
-                const seasons = goalsContent.split('## ').filter(s => s.includes('2026'));
-                
-                if (seasons.length) {
-                    html += `<div class="card"><h2><span class="emoji">🌱</span>Seasons</h2>`;
-                    seasons.forEach(season => {
-                        const lines = season.trim().split('\n');
-                        const title = lines[0].replace(/\(.*?\)/, '').trim();
-                        const direction = season.match(/\*\*Direction:\*\*\s*(.*)/);
-                        if (direction) {
-                            html += `<div class="goal-season"><h3>${title}</h3><p>${direction[1]}</p></div>`;
-                        }
-                    });
-                    html += `</div>`;
+            }
+            for (const l of graphLinks) {
+                const s = nodeMap[l.source], t = nodeMap[l.target];
+                if (!s || !t) continue;
+                let dx = t.x - s.x, dy = t.y - s.y;
+                let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                let force = (dist - 60) * attraction;
+                let fx = (dx / dist) * force, fy = (dy / dist) * force;
+                s.vx += fx; s.vy += fy;
+                t.vx -= fx; t.vy -= fy;
+            }
+            graphNodes.forEach(n => {
+                n.vx -= n.x * centerG; n.vy -= n.y * centerG;
+                n.vx *= damping; n.vy *= damping;
+                n.x += n.vx; n.y += n.vy;
+            });
+        }
+    }
+
+    function renderGraph() {
+        const canvas = document.getElementById('graph-canvas');
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const ch = window.innerWidth <= 600 ? 280 : 380;
+
+        canvas.width = rect.width * dpr;
+        canvas.height = ch * dpr;
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = ch + 'px';
+        ctx.scale(dpr, dpr);
+
+        // Auto-fit
+        if (graphNodes.length && gT.scale === 1 && gT.x === 0) {
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            graphNodes.forEach(n => {
+                minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
+                minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+            });
+            const w = maxX - minX + 80, h = maxY - minY + 80;
+            gT.scale = Math.min(rect.width / w, ch / h, 2.5) * 0.85;
+            gT.x = rect.width / 2 - ((minX + maxX) / 2) * gT.scale;
+            gT.y = ch / 2 - ((minY + maxY) / 2) * gT.scale;
+        }
+
+        const sc = gT.scale, tx = gT.x, ty = gT.y;
+        const nodeMap = {};
+        graphNodes.forEach(n => { nodeMap[n.id] = n; });
+
+        function drawFrame() {
+            ctx.clearRect(0, 0, rect.width, ch);
+            ctx.fillStyle = '#0f1712';
+            ctx.fillRect(0, 0, rect.width, ch);
+
+            // Links
+            for (const l of graphLinks) {
+                const s = nodeMap[l.source], t = nodeMap[l.target];
+                if (!s || !t) continue;
+                const x1 = s.x * sc + tx, y1 = s.y * sc + ty;
+                const x2 = t.x * sc + tx, y2 = t.y * sc + ty;
+
+                if (hoveredNode && (l.source === hoveredNode.id || l.target === hoveredNode.id)) {
+                    ctx.globalAlpha = 0.7;
+                    ctx.strokeStyle = '#c4854c';
+                    ctx.lineWidth = 2;
+                } else {
+                    ctx.globalAlpha = 0.2;
+                    ctx.strokeStyle = '#6b9e78';
+                    ctx.lineWidth = 1;
                 }
-                
-                // ── Knowledge Graph Stats ──
-                const entities = Object.keys(kg.entities || {}).length;
-                const relations = (kg.relations || []).length;
-                const artworks = Object.values(kg.entities || {}).filter(e => e.entity_type === 'Artwork').length;
-                
-                html += `
-                    <div class="card">
-                        <h2><span class="emoji">🧠</span>Knowledge Graph</h2>
-                        <div class="stats">
-                            <div class="stat">
-                                <div class="number">${entities}</div>
-                                <div class="label">Entities</div>
-                            </div>
-                            <div class="stat">
-                                <div class="number">${relations}</div>
-                                <div class="label">Relations</div>
-                            </div>
-                            <div class="stat">
-                                <div class="number">${artworks}</div>
-                                <div class="label">Artworks</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                // ── Core Memories count ──
-                const pinnedContent = brain.pinned || '';
-                const pinnedCount = (pinnedContent.match(/^## \d+\./gm) || []).length;
-                
-                if (pinnedCount) {
-                    html += `
-                        <div class="card">
-                            <h2><span class="emoji">💛</span>Core Memories</h2>
-                            <p style="font-size: 0.9rem; color: var(--weathered-stone);">
-                                ${pinnedCount} memories pinned. These never fade.
-                            </p>
-                        </div>
-                    `;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+
+            // Nodes
+            for (const n of graphNodes) {
+                const x = n.x * sc + tx, y = n.y * sc + ty;
+                const r = n.radius * Math.min(sc, 2);
+                if (x + r < 0 || x - r > rect.width || y + r < 0 || y - r > ch) continue;
+
+                let alpha = 1;
+                if (hoveredNode && hoveredNode.id !== n.id) {
+                    const connected = graphLinks.some(l =>
+                        (l.source === hoveredNode.id && l.target === n.id) ||
+                        (l.target === hoveredNode.id && l.source === n.id)
+                    );
+                    alpha = connected ? 1 : 0.15;
                 }
-                
-                // ── Footer ──
-                html += `
-                    <div class="footer">
-                        <div class="vine">🌿</div>
-                        Things break. Life grows into the cracks.<br>
-                        That's where the beauty is.
-                    </div>
-                `;
-                
-                container.innerHTML = html;
-                
-            } catch (err) {
-                container.innerHTML = `
-                    <div class="loading">
-                        Clara's brain couldn't load. Is the daemon running?<br>
-                        <small style="opacity:0.5;">${err.message}</small>
-                    </div>
-                `;
+                ctx.globalAlpha = alpha;
+
+                if (hoveredNode === n) {
+                    ctx.shadowColor = n.color;
+                    ctx.shadowBlur = 16;
+                }
+
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fillStyle = n.color + (alpha < 1 ? '40' : 'cc');
+                ctx.fill();
+                ctx.strokeStyle = n.color;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+
+                if (sc > 0.4 || hoveredNode === n) {
+                    ctx.font = Math.max(9, 11 * Math.min(sc, 1.5)) + 'px Lora, serif';
+                    ctx.fillStyle = alpha < 1 ? 'rgba(224,219,209,0.2)' : '#e0dbd1';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(n.id.length > 18 ? n.id.slice(0, 17) + '\u2026' : n.id, x, y + r + 14);
+                }
+            }
+            ctx.globalAlpha = 1;
+
+            // Tooltip
+            if (hoveredNode) {
+                const x = hoveredNode.x * sc + tx;
+                const y = hoveredNode.y * sc + ty - hoveredNode.radius * Math.min(sc, 2) - 12;
+                const text = hoveredNode.id + ' \u2014 ' + hoveredNode.type + ' \u00b7 ' + hoveredNode.obsCount + ' obs \u00b7 ' + hoveredNode.degree + ' conn';
+                ctx.font = '11px Lora, serif';
+                const tw = ctx.measureText(text).width + 16;
+                const th = 24;
+                ctx.fillStyle = 'rgba(28,38,31,0.92)';
+                ctx.strokeStyle = 'rgba(196,133,76,0.4)';
+                ctx.lineWidth = 1;
+                roundRect(ctx, x - tw / 2, y - th, tw, th, 6);
+                ctx.fillStyle = '#e0dbd1';
+                ctx.textAlign = 'center';
+                ctx.fillText(text, x, y - 7);
             }
         }
-        
-        loadBrain();
+
+        drawFrame();
+
+        // Mouse
+        canvas.onmousemove = function(e) {
+            var crect = canvas.getBoundingClientRect();
+            var mx = e.clientX - crect.left, my = e.clientY - crect.top;
+            if (dragNode) {
+                dragNode.x = (mx - gT.x) / gT.scale;
+                dragNode.y = (my - gT.y) / gT.scale;
+                drawFrame(); return;
+            }
+            if (isPanning) {
+                gT.x += mx - panStart.x;
+                gT.y += my - panStart.y;
+                panStart.x = mx; panStart.y = my;
+                drawFrame(); return;
+            }
+            var found = null;
+            for (var ni = 0; ni < graphNodes.length; ni++) {
+                var n = graphNodes[ni];
+                var nx = n.x * sc + tx, ny = n.y * sc + ty;
+                var r = n.radius * Math.min(sc, 2) + 4;
+                if (Math.hypot(mx - nx, my - ny) < r) { found = n; break; }
+            }
+            if (found !== hoveredNode) {
+                hoveredNode = found;
+                canvas.style.cursor = found ? 'pointer' : 'grab';
+                drawFrame();
+            }
+        };
+        canvas.onmousedown = function(e) {
+            var crect = canvas.getBoundingClientRect();
+            var mx = e.clientX - crect.left, my = e.clientY - crect.top;
+            if (hoveredNode) { dragNode = hoveredNode; return; }
+            isPanning = true;
+            panStart = { x: mx, y: my };
+            canvas.style.cursor = 'grabbing';
+        };
+        canvas.onmouseup = function() {
+            dragNode = null; isPanning = false;
+            canvas.style.cursor = hoveredNode ? 'pointer' : 'grab';
+        };
+        canvas.onmouseleave = function() {
+            dragNode = null; isPanning = false; hoveredNode = null;
+            drawFrame();
+        };
+        canvas.onwheel = function(e) {
+            e.preventDefault();
+            var crect = canvas.getBoundingClientRect();
+            var mx = e.clientX - crect.left, my = e.clientY - crect.top;
+            var factor = e.deltaY < 0 ? 1.12 : 0.89;
+            var newScale = gT.scale * factor;
+            if (newScale < 0.15 || newScale > 8) return;
+            gT.x = mx - (mx - gT.x) * factor;
+            gT.y = my - (my - gT.y) * factor;
+            gT.scale = newScale;
+            drawFrame();
+        };
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    // =============================================
+    //  LOAD PINNED
+    // =============================================
+    async function loadPinned() {
+        try {
+            var data = await fetchJSON('/api/pinned');
+            var text = data.content || '';
+            var body = document.getElementById('pinned-body');
+            var sections = text.split(/^## \d+\./m).filter(function(s) { return s.trim(); });
+            document.getElementById('pinned-count').textContent = '(' + sections.length + ')';
+            document.getElementById('s-pinned').textContent = sections.length;
+            if (!sections.length) {
+                body.innerHTML = '<div class="memory-text" style="padding:8px 0;">No pinned memories yet.</div>';
+                return;
+            }
+            body.innerHTML = sections.map(function(s) {
+                var lines = s.trim().split('\n');
+                var title = lines[0].replace(/^\s*/, '').replace(/\*\*/g, '');
+                var rest = lines.slice(1).join('\n').trim();
+                return '<div class="memory-item"><div class="memory-title">' + esc(title) + '</div><div class="memory-text">' + esc(rest).replace(/\n/g, '<br>') + '</div></div>';
+            }).join('');
+        } catch(e) {
+            document.getElementById('pinned-body').innerHTML = '<div class="memory-text" style="padding:8px 0;opacity:0.5;">Could not load pinned memories.</div>';
+        }
+    }
+
+    // =============================================
+    //  LOAD WINS
+    // =============================================
+    async function loadWins() {
+        try {
+            var data = await fetchJSON('/api/wins');
+            var text = data.content || '';
+            var body = document.getElementById('wins-body');
+            var winLines = text.split('\n').filter(function(l) { return l.startsWith('- **'); });
+            document.getElementById('wins-count').textContent = '(' + winLines.length + ')';
+            if (!winLines.length) {
+                body.innerHTML = '<div class="win-item" style="border:none;">No wins recorded yet.</div>';
+                return;
+            }
+            body.innerHTML = winLines.reverse().map(function(line) {
+                var match = line.match(/- \*\*(.*?)\*\*\s*(.*)/);
+                if (match) return '<div class="win-item"><strong>' + esc(match[1]) + '</strong> ' + esc(match[2]) + '</div>';
+                return '<div class="win-item">' + esc(line.replace(/^- /, '')) + '</div>';
+            }).join('');
+        } catch(e) {
+            document.getElementById('wins-body').innerHTML = '<div class="win-item" style="border:none;opacity:0.5;">Could not load wins.</div>';
+        }
+    }
+
+    // =============================================
+    //  LOAD GOALS
+    // =============================================
+    async function loadGoals() {
+        try {
+            var data = await fetchJSON('/api/goals');
+            var text = data.content || '';
+            var body = document.getElementById('goals-body');
+            if (!text.trim()) {
+                body.innerHTML = '<div class="memory-text" style="padding:8px 0;opacity:0.5;">No goals set yet.</div>';
+                return;
+            }
+            var sections = text.split(/^## /m).filter(function(s) { return s.trim(); });
+            body.innerHTML = sections.map(function(s) {
+                var lines = s.trim().split('\n');
+                var title = lines[0].trim();
+                var dirMatch = s.match(/\*\*Direction:\*\*\s*(.*)/);
+                var content = dirMatch ? dirMatch[1] : lines.slice(1).join(' ').trim().slice(0, 200);
+                return '<div class="memory-item"><div class="memory-title">' + esc(title) + '</div><div class="memory-text">' + esc(content) + '</div></div>';
+            }).join('');
+        } catch(e) {
+            document.getElementById('goals-body').innerHTML = '<div class="memory-text" style="padding:8px 0;opacity:0.5;">Could not load goals.</div>';
+        }
+    }
+
+    // =============================================
+    //  LOAD NEXT
+    // =============================================
+    async function loadNext() {
+        try {
+            var data = await fetchJSON('/api/next');
+            var text = data.content || '';
+            var el = document.getElementById('next-content');
+            var boldMatch = text.match(/\*\*(.*?)\*\*/);
+            if (boldMatch) { el.textContent = boldMatch[1]; }
+            else {
+                var firstLine = text.split('\n').find(function(l) { return l.trim() && !l.startsWith('#'); });
+                el.textContent = firstLine || 'Touch the clay. See what happens.';
+            }
+        } catch(e) {
+            document.getElementById('next-content').textContent = 'Touch the clay. See what happens.';
+        }
+    }
+
+    // =============================================
+    //  LOAD SESSIONS
+    // =============================================
+    async function loadSessions() {
+        try {
+            var data = await fetchJSON('/api/recent');
+            var text = data.content || '';
+            var body = document.getElementById('sessions-body');
+            if (!text.trim()) {
+                body.innerHTML = '<div class="session-item"><div class="session-content">No sessions logged yet.</div></div>';
+                document.getElementById('sessions-count').textContent = '(0)';
+                return;
+            }
+            var sections = text.split(/^## /m).filter(function(s) { return s.trim(); });
+            document.getElementById('sessions-count').textContent = '(' + sections.length + ')';
+            document.getElementById('s-sessions').textContent = sections.length;
+            body.innerHTML = sections.reverse().slice(0, 10).map(function(s) {
+                var lines = s.trim().split('\n');
+                var title = lines[0].trim();
+                var content = lines.slice(1).join('\n').trim().slice(0, 300);
+                return '<div class="session-item"><div class="session-date">' + esc(title) + '</div><div class="session-content">' + esc(content).replace(/\n/g, '<br>') + '</div></div>';
+            }).join('');
+        } catch(e) {
+            document.getElementById('sessions-body').innerHTML = '<div class="session-item"><div class="session-content" style="opacity:0.5;">Could not load sessions.</div></div>';
+        }
+    }
+
+    // =============================================
+    //  LOAD TIMELINE
+    // =============================================
+    async function loadTimeline() {
+        try {
+            var data = await fetchJSON('/api/summary');
+            var text = data.content || '';
+            var body = document.getElementById('timeline-body');
+            if (!text.trim()) {
+                body.innerHTML = '<div class="timeline-block" style="opacity:0.5;">No timeline entries yet.</div>';
+                return;
+            }
+            body.innerHTML = '<div class="timeline-block">' + esc(text) + '</div>';
+        } catch(e) {
+            document.getElementById('timeline-body').innerHTML = '<div class="timeline-block" style="opacity:0.5;">Could not load timeline.</div>';
+        }
+    }
+
+    // =============================================
+    //  LOAD SOUL
+    // =============================================
+    async function loadSoul() {
+        try {
+            var data = await fetchJSON('/api/soul');
+            var text = data.content || '';
+            var body = document.getElementById('soul-body');
+            if (!text.trim()) {
+                body.innerHTML = '<div class="soul-block" style="opacity:0.5;">Soul file not found.</div>';
+                return;
+            }
+            var lines = text.split('\n').slice(0, 60);
+            body.innerHTML = '<div class="soul-block">' + esc(lines.join('\n')) + '</div>';
+        } catch(e) {
+            document.getElementById('soul-body').innerHTML = '<div class="soul-block" style="opacity:0.5;">Could not load soul.</div>';
+        }
+    }
+
+    // =============================================
+    //  SEARCH
+    // =============================================
+    var searchTimer;
+    document.getElementById('search-input').addEventListener('input', function(e) {
+        clearTimeout(searchTimer);
+        var q = e.target.value.trim();
+        if (!q) { document.getElementById('search-results').innerHTML = ''; return; }
+        searchTimer = setTimeout(function() { doSearch(q); }, 300);
+    });
+
+    async function doSearch(query) {
+        var results = document.getElementById('search-results');
+        try {
+            var data = await fetchJSON('/api/search?q=' + encodeURIComponent(query));
+            var hits = data.results || [];
+            if (!hits.length) {
+                results.innerHTML = '<div class="search-result"><div class="source">No results</div>No matches for "' + esc(query) + '" in Clara\'s memory.</div>';
+                return;
+            }
+            results.innerHTML = hits.map(function(h) {
+                var highlighted = esc(h.text).replace(
+                    new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'),
+                    '<mark>$1</mark>'
+                );
+                return '<div class="search-result"><div class="source">' + esc(h.source) + '</div>' + highlighted + '</div>';
+            }).join('');
+        } catch(e) {
+            results.innerHTML = '<div class="search-result"><div class="source">Error</div>Search failed.</div>';
+        }
+    }
+
+    // =============================================
+    //  INIT
+    // =============================================
+    async function init() {
+        await Promise.all([
+            loadStatus(),
+            loadGraph(),
+            loadNext(),
+            loadPinned(),
+            loadWins(),
+            loadGoals(),
+            loadSessions(),
+            loadTimeline(),
+            loadSoul(),
+        ]);
+    }
+
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            gT = { x: 0, y: 0, scale: 1 };
+            renderGraph();
+        }, 200);
+    });
+
+    init();
     </script>
 </body>
 </html>
