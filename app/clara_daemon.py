@@ -345,15 +345,34 @@ def check_auth(handler, which="clara"):
     return token == CLARA_PASSWORD
 
 def add_image_to_kg(image_item):
-    """Add or update an image entity in the knowledge graph."""
+    """Add or update an image entity in the knowledge graph.
+    Accepts both simple upload items and rich manifest items."""
     kg = load_knowledge()
     entity_id = f"Image-{image_item['id'][:12]}"
     
     observations = []
     if image_item.get('caption'):
         observations.append(f"Caption: {image_item['caption']}")
+    if image_item.get('clara_reading'):
+        observations.append(f"Clara Reading: {image_item['clara_reading']}")
     if image_item.get('note'):
         observations.append(f"Note: {image_item['note']}")
+    if image_item.get('mood'):
+        observations.append(f"Mood: {image_item['mood']}")
+    if image_item.get('form'):
+        observations.append(f"Form: {image_item['form']}")
+    if image_item.get('surface'):
+        observations.append(f"Surface: {image_item['surface']}")
+    if image_item.get('themes'):
+        themes = image_item['themes']
+        if isinstance(themes, list):
+            themes = ', '.join(themes)
+        observations.append(f"Themes: {themes}")
+    if image_item.get('palette'):
+        pal = image_item['palette']
+        if isinstance(pal, list):
+            pal = ', '.join(pal)
+        observations.append(f"Palette: {pal}")
     observations.append(f"Tier: {TIER_LABELS.get(image_item.get('tier', ''), image_item.get('tier', ''))}")
     observations.append(f"Visibility: {image_item.get('visibility', 'private')}")
     observations.append(f"Added: {image_item.get('date', '')}")
@@ -367,22 +386,37 @@ def add_image_to_kg(image_item):
         "image_url": image_item.get('url', ''),
     }
     
-    # Add relation to uploader
+    def add_relation(frm, to, rel):
+        """Add a relation if it doesn't already exist."""
+        for r in kg["relations"]:
+            if (r.get("from_entity") == frm and r.get("to_entity") == to
+                    and r.get("relation_type") == rel):
+                return
+        kg["relations"].append({
+            "from_entity": frm, "to_entity": to, "relation_type": rel
+        })
+    
+    # Relation: uploader → image
     uploader = image_item.get('uploaded_by', 'Katie')
-    relation = {
-        "from_entity": uploader,
-        "to_entity": entity_id,
-        "relation_type": "uploaded" if uploader == "Katie" else "left_for_katie"
-    }
-    # Avoid duplicate relations
-    existing = [r for r in kg["relations"] if 
-                r.get("from_entity") == relation["from_entity"] and 
-                r.get("to_entity") == relation["to_entity"]]
-    if not existing:
-        kg["relations"].append(relation)
+    if uploader == 'Ryan':
+        add_relation('Ryan', entity_id, 'left_for_katie')
+    else:
+        add_relation('Katie-Tudor', entity_id, 'uploaded')
+    
+    # Relation: image → artwork entity it depicts
+    artwork = image_item.get('artwork_entity')
+    rel_type = image_item.get('relation_type', 'depicts')
+    if artwork and artwork in kg["entities"]:
+        add_relation(entity_id, artwork, rel_type)
+    
+    # Relation: image → all connected entities
+    for target in (image_item.get('connects_to') or []):
+        if target in kg["entities"] and target != artwork:
+            add_relation(entity_id, target, 'related_to')
     
     # Save
     KNOWLEDGE_FILE.write_text(json.dumps(kg, indent=2), encoding="utf-8")
+    return entity_id
 
 # ─── HTTP Handler ───────────────────────────────────────────────────────────
 
@@ -773,6 +807,95 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True, "id": img_id, "url": image_item["url"]})
             except Exception as e:
                 print(f"Upload error: {e}")
+                self.send_json({"error": str(e)}, 500)
+            return
+        
+        # ── Bulk import from manifest ──
+        if path == "/api/images/bulk-import":
+            if not check_auth(self):
+                self.send_json({"error": "unauthorized"}, 401)
+                return
+            try:
+                manifest = json.loads(body) if body else {}
+                entries = manifest.get("images", [])
+                results = []
+                items = load_images()
+                now = datetime.now()
+                
+                for entry in entries:
+                    # Skip section markers
+                    if "_section" in entry or "_note" in entry:
+                        if "source_path" not in entry:
+                            continue
+                    src = entry.get("source_path", "")
+                    if not src or src.startswith("RYAN:"):
+                        results.append({"skipped": src, "reason": "no source or needs Ryan input"})
+                        continue
+                    
+                    src_path = Path(src)
+                    if not src_path.exists():
+                        results.append({"skipped": src, "reason": "file not found"})
+                        continue
+                    
+                    # Read image
+                    image_data = src_path.read_bytes()
+                    img_id = hashlib.sha256(
+                        (str(time.time()) + src_path.name).encode()
+                    ).hexdigest()[:16]
+                    
+                    # Save files
+                    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+                    THUMBS_DIR.mkdir(parents=True, exist_ok=True)
+                    fname = f"{img_id}.jpg"
+                    (IMAGES_DIR / fname).write_bytes(image_data)
+                    (THUMBS_DIR / fname).write_bytes(image_data)
+                    
+                    tier = entry.get("tier", "studio")
+                    if tier not in VALID_TIERS:
+                        tier = "studio"
+                    visibility = entry.get("visibility", "private")
+                    if visibility not in VALID_VISIBILITY:
+                        visibility = "private"
+                    
+                    image_item = {
+                        "id": img_id,
+                        "file": fname,
+                        "url": f"/uploads/{fname}",
+                        "thumb_url": f"/uploads/thumbs/{fname}",
+                        "caption": entry.get("caption", ""),
+                        "clara_reading": entry.get("clara_reading", ""),
+                        "note": entry.get("note", ""),
+                        "tier": tier,
+                        "visibility": visibility,
+                        "uploaded_by": entry.get("uploaded_by", "Katie"),
+                        "original_name": src_path.name,
+                        "date": now.strftime("%B %d, %Y"),
+                        "timestamp": int(now.timestamp()),
+                        "size": len(image_data),
+                        # Rich manifest fields
+                        "mood": entry.get("mood", ""),
+                        "form": entry.get("form", ""),
+                        "surface": entry.get("surface", ""),
+                        "themes": entry.get("themes", []),
+                        "palette": entry.get("palette", []),
+                        "artwork_entity": entry.get("artwork_entity"),
+                        "relation_type": entry.get("relation_type", "depicts"),
+                        "connects_to": entry.get("connects_to", []),
+                    }
+                    items.append(image_item)
+                    
+                    try:
+                        eid = add_image_to_kg(image_item)
+                        results.append({"ok": True, "id": img_id, "entity": eid, "file": src_path.name})
+                    except Exception as e:
+                        results.append({"ok": True, "id": img_id, "file": src_path.name, "kg_error": str(e)})
+                    
+                    time.sleep(0.01)  # small delay for unique timestamps
+                
+                save_images(items)
+                self.send_json({"imported": len([r for r in results if r.get("ok")]), "results": results})
+            except Exception as e:
+                print(f"Bulk import error: {e}")
                 self.send_json({"error": str(e)}, 500)
             return
         
