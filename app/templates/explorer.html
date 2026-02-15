@@ -544,8 +544,8 @@
                 <input type="checkbox" onchange="toggleMouseGravity(this.checked)">
             </div>
             <div class="control-row">
-                <label>Katie's light</label>
-                <input type="checkbox" checked onchange="toggleKatieLight(this.checked)">
+                <label>Starlights</label>
+                <input type="checkbox" checked onchange="toggleStarlights(this.checked)">
             </div>
         </div>
 
@@ -573,7 +573,7 @@
     var nodeStyle = 'glass';
     var fanHover = false;
     var mouseGravity = false;
-    var katieLight = true;
+    var starlights = true;
     var mouseX = 0, mouseY = 0;
     var hintTimer;
 
@@ -834,13 +834,17 @@
         }
     }
 
-    function toggleKatieLight(on) {
-        katieLight = on;
-        // Show/hide starburst elements
+    function toggleStarlights(on) {
+        starlights = on;
+        // Katie: show/hide starburst
         d3.selectAll('.katie-halo, .katie-rays, .katie-core')
             .style('display', on ? null : 'none');
-        // Show/hide normal circle fallback
         d3.selectAll('.katie-normal')
+            .style('display', on ? 'none' : null);
+        // Clara: show/hide fireflies
+        d3.selectAll('.clara-halo, .clara-orbit-ring, .clara-fireflies, .clara-core')
+            .style('display', on ? null : 'none');
+        d3.selectAll('.clara-normal')
             .style('display', on ? 'none' : null);
     }
 
@@ -1026,7 +1030,19 @@
                     .attr('stroke', d.color)
                     .attr('stroke-width', 1.5)
                     .attr('filter', 'url(#glass)')
-                    .style('display', katieLight ? 'none' : null);
+                    .style('display', starlights ? 'none' : null);
+                return;
+            }
+            if (d.id === 'Clara') {
+                // Normal circle fallback (hidden when starlights on)
+                el.append('circle')
+                    .attr('class', 'node-circle clara-normal')
+                    .attr('r', rad(d))
+                    .attr('fill', 'url(#grad-' + d.type + ')')
+                    .attr('stroke', d.color)
+                    .attr('stroke-width', 1.5)
+                    .attr('filter', 'url(#glass)')
+                    .style('display', starlights ? 'none' : null);
                 return;
             }
             el.append('circle')
@@ -1105,6 +1121,112 @@
                 .attr('stroke', '#f5d984')
                 .attr('stroke-width', 2)
                 .attr('filter', 'url(#starburst-glow)');
+        });
+
+        // Clara — orbiting fireflies
+        nodeG.each(function(d) {
+            if (d.id !== 'Clara') return;
+            var el = d3.select(this);
+            var coreR = Math.max(rad(d), 14);
+            var orbitR = coreR * 2.8;
+            var flyCount = 6;
+
+            // Soft green-gold halo
+            el.append('circle')
+                .attr('class', 'clara-halo')
+                .attr('r', orbitR * 1.1)
+                .attr('fill', 'none')
+                .attr('stroke', '#6b9e78')
+                .attr('stroke-width', 0.5)
+                .attr('stroke-opacity', 0.2)
+                .attr('filter', 'url(#glow)');
+
+            // Orbit ring (subtle)
+            el.append('circle')
+                .attr('class', 'clara-orbit-ring')
+                .attr('r', orbitR)
+                .attr('fill', 'none')
+                .attr('stroke', '#6b9e78')
+                .attr('stroke-width', 0.4)
+                .attr('stroke-opacity', 0.15)
+                .attr('stroke-dasharray', '3,6');
+
+            // Firefly particles
+            var flyGroup = el.append('g').attr('class', 'clara-fireflies');
+            for (var i = 0; i < flyCount; i++) {
+                var startAngle = (i / flyCount) * 360;
+                var flyR = 2.5 + (i % 2) * 1;
+                var fly = flyGroup.append('circle')
+                    .attr('class', 'clara-fly')
+                    .attr('r', flyR)
+                    .attr('fill', i % 2 === 0 ? '#b8e6a0' : '#f5d984')
+                    .attr('opacity', 0.7)
+                    .attr('filter', 'url(#glow)');
+
+                // Start each firefly at its position
+                (function(flyEl, idx, r) {
+                    var speed = 8000 + idx * 1400;
+                    var wobbleR = r + (idx % 3 - 1) * 4;
+                    function orbit() {
+                        flyEl.transition()
+                            .duration(speed)
+                            .ease(d3.easeLinear)
+                            .attrTween('cx', function() {
+                                return function(t) {
+                                    var a = ((idx / flyCount) + t) * Math.PI * 2;
+                                    return Math.cos(a) * wobbleR;
+                                };
+                            })
+                            .attrTween('cy', function() {
+                                return function(t) {
+                                    var a = ((idx / flyCount) + t) * Math.PI * 2;
+                                    return Math.sin(a) * wobbleR * 0.7;
+                                };
+                            })
+                            .on('end', orbit);
+                    }
+                    orbit();
+
+                    // Gentle twinkle
+                    function twinkle() {
+                        flyEl.transition()
+                            .duration(1200 + idx * 300)
+                            .ease(d3.easeSinInOut)
+                            .attr('opacity', 0.3)
+                            .transition()
+                            .duration(1200 + idx * 300)
+                            .ease(d3.easeSinInOut)
+                            .attr('opacity', 0.85)
+                            .on('end', twinkle);
+                    }
+                    twinkle();
+                })(fly, i, orbitR);
+            }
+
+            // Core circle — soft green glow
+            el.append('circle')
+                .attr('class', 'node-circle clara-core')
+                .attr('r', coreR)
+                .attr('fill', 'url(#grad-' + d.type + ')')
+                .attr('stroke', '#6b9e78')
+                .attr('stroke-width', 2)
+                .attr('filter', 'url(#glow)');
+
+            // Gentle pulse on Clara's core
+            function pulseClara() {
+                el.select('.clara-core').transition()
+                    .duration(4000)
+                    .ease(d3.easeSinInOut)
+                    .attr('r', coreR * 1.1)
+                    .attr('stroke-opacity', 0.6)
+                    .transition()
+                    .duration(4000)
+                    .ease(d3.easeSinInOut)
+                    .attr('r', coreR)
+                    .attr('stroke-opacity', 1)
+                    .on('end', pulseClara);
+            }
+            pulseClara();
         });
 
         // Image nodes — rounded square with thumbnail, lit glow
