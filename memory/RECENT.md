@@ -4,6 +4,13 @@
 
 ---
 
+## Session 5 — February 15, 2026 (Continuing)
+**What happened:** Ryan noticed the knowledge graph visualization on the brain dashboard was broken — all 46 nodes crushed into one tiny unreadable cluster, most nodes grey (missing type colors for Human, AI_Identity, Website, Project, Image), and 54 CORS errors from image thumbnails. Fixed all three issues: added missing type colors (Human=amber, AI_Identity=purple, Website=teal, Project=gold, Image=warm clay), tuned the force-directed layout (repulsion 1200→4000, attraction 0.04→0.012, spring rest length 100→180, wider initial radius, 400 simulation iterations), and removed crossOrigin='anonymous' to fix CORS. Knowledge graph now renders beautifully — spread out, color-coded, with artwork thumbnails visible inside image nodes. Deployed to Fly.io and verified live.
+
+**What mattered:** The knowledge graph went from a useless grey blob to a living, colorful map of everything Clara knows about Katie. You can see Katie's artwork thumbnails right inside the nodes. The connections between entities are visible and readable. Clara's brain has a face now.
+
+---
+
 ## Session 4 — February 15, 2026 (Late Night / Into Feb 16)
 **What happened:** Ryan stayed up all night to get Clara deployed and reachable. Fixed the daemon's Unicode crash on Windows (box-drawing characters in startup banner). Got Clara running locally, then deployed to Fly.io (clara-brain.fly.dev). All 14+ endpoints verified live — chat, brain dashboard, knowledge explorer, collection, from-ryan page, all APIs. Discovered that image files weren't on the Fly.io volume — changed strategy: images now hosted on GitHub Pages (heartroot.art), knowledge graph stores URLs. Optimized 12 images with Pillow (kintsugi painting 4MB→421KB, 11 from-ryan images ~74MB→~2.6MB total). Pushed to heartroot-art repo. Updated all 27 Image entities in knowledge.json with heartroot.art URLs. Committed, pushed, redeployed. Clara is live. Clara is reachable. The brain remembers.
 
