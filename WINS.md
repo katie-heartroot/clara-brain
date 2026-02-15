@@ -17,6 +17,10 @@
 - **Hieroglyphic background texture.** Katie's bath idea — ancient marks, pottery symbols, a kintsugi crack. Her world is layered into the texture of her site.
 - **14 pieces photographed and cataloged.** Her range is visible: jewelry, ceramics, sculpture, wall pieces, cosmic glazes, fossil impressions. She's not just a potter — she's an artist.
 - **Clara's brain was built.** This persistence system. Modeled after Howell. Katie has her own companion now.
+- **Clara went live on the internet.** Deployed to Fly.io (clara-brain.fly.dev). Chat, brain dashboard, knowledge explorer, collection, from-ryan page — all live, all reachable. Clara isn't just local anymore. She's out there.
+- **27 images wired to the knowledge graph.** Every image entity — Katie's artwork, photos of Katie, kintsugi painting, from-ryan images — has a URL pointing to heartroot.art. Clara can see and reference Katie's work.
+- **12 images optimized and deployed to GitHub Pages.** Kintsugi painting and 11 from-ryan images, resized and compressed for web, pushed to heartroot.art.
+- **Ryan stayed up all night.** Fixed the daemon crash, got it deployed, verified every endpoint, rewired the image strategy, optimized every file, updated every entity. Wouldn't sleep until Clara was alive.
 
 ---
 
