@@ -95,23 +95,93 @@ AUTH_PATH = os.environ.get("AUTH_PATH", "/hearth")
 #   Layer 2: Passphrase — something only Katie knows
 #   Layer 3: SMS 2FA — 6-digit code to Katie's phone via Twilio
 #
-# After auth: httpOnly secure session cookie, 8hr lifetime, 10min inactivity
+# After auth: httpOnly secure session cookie, 8hr lifetime, 5min inactivity
 #   timeout, 2min background tab timeout, quick-lock button.
 
-_sessions = {}        # token -> {created, last_active, ip, trusted_device}
-_trusted_devices = {} # device_token -> {created, last_used}
+_sessions = {}        # token -> {created, last_active, ip}
 _pending_codes = {}   # session_key -> {code, created, attempts}
 _lockouts = {}        # ip -> {until, passphrase_fails, code_fails}
 _auth_lock = threading.Lock()
 
 SESSION_LIFETIME = 8 * 3600       # 8 hours
-INACTIVITY_TIMEOUT = 10 * 60      # 10 minutes
+INACTIVITY_TIMEOUT = 5 * 60       # 5 minutes
 CODE_EXPIRY = 180                 # 3 minutes
-TRUSTED_DEVICE_LIFETIME = 30 * 86400  # 30 days
 LOCKOUT_DURATION_PASSPHRASE = 30 * 60  # 30 min after 3 bad passphrases
 LOCKOUT_DURATION_CODE = 60 * 60        # 1 hour after 3 bad codes
 MAX_PASSPHRASE_ATTEMPTS = 3
 MAX_CODE_ATTEMPTS = 3
+
+# ─── Audit Log ──────────────────────────────────────────────────────────────
+
+AUDIT_LOG_PATH = BRAIN_ROOT / "audit.log"
+AUDIT_MAX_AGE_DAYS = 30
+
+def audit_log(event, detail=None, ip=None):
+    """Append a security event to the audit log."""
+    entry = {
+        "ts": datetime.now().isoformat(),
+        "event": event,
+    }
+    if detail:
+        entry["detail"] = detail
+    if ip:
+        entry["ip"] = ip
+    try:
+        with open(AUDIT_LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception as e:
+        print(f"[AUDIT] write failed: {e}")
+
+
+def read_audit_log(max_entries=500):
+    """Read recent audit log entries."""
+    if not AUDIT_LOG_PATH.exists():
+        return []
+    entries = []
+    try:
+        with open(AUDIT_LOG_PATH, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        entries.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+        # Auto-rotate: keep only last 30 days
+        cutoff = (datetime.now().timestamp()) - (AUDIT_MAX_AGE_DAYS * 86400)
+        entries = [e for e in entries if datetime.fromisoformat(e["ts"]).timestamp() > cutoff]
+        return entries[-max_entries:]
+    except Exception:
+        return []
+
+
+def get_audit_summary_since(last_visit_ts=None):
+    """Get a summary of security events since last visit."""
+    entries = read_audit_log()
+    if last_visit_ts:
+        entries = [e for e in entries if datetime.fromisoformat(e["ts"]).timestamp() > last_visit_ts]
+    summary = {
+        "failed_passphrases": 0,
+        "failed_codes": 0,
+        "sms_rejected": 0,
+        "successful_logins": 0,
+        "events": []
+    }
+    for e in entries:
+        ev = e.get("event", "")
+        if ev == "auth_fail_passphrase":
+            summary["failed_passphrases"] += 1
+            summary["events"].append(e)
+        elif ev == "auth_fail_code":
+            summary["failed_codes"] += 1
+            summary["events"].append(e)
+        elif ev == "sms_rejected":
+            summary["sms_rejected"] += 1
+            summary["events"].append(e)
+        elif ev == "auth_success":
+            summary["successful_logins"] += 1
+    summary["total_suspicious"] = summary["failed_passphrases"] + summary["failed_codes"] + summary["sms_rejected"]
+    return summary
 
 
 def _now():
@@ -132,10 +202,7 @@ def _clean_sessions():
     expired_codes = [k for k, c in _pending_codes.items() if now - c["created"] > CODE_EXPIRY]
     for k in expired_codes:
         del _pending_codes[k]
-    expired_devices = [d for d, info in _trusted_devices.items()
-                       if now - info["created"] > TRUSTED_DEVICE_LIFETIME]
-    for d in expired_devices:
-        del _trusted_devices[d]
+
 
 
 def is_locked_out(ip):
@@ -232,15 +299,14 @@ def send_sms_code(code):
         return False
 
 
-def create_session(ip, device_token=None):
+def create_session(ip):
     """Create an authenticated session. Returns session token."""
     token = secrets.token_urlsafe(48)
     with _auth_lock:
         _sessions[token] = {
             "created": _now(),
             "last_active": _now(),
-            "ip": ip,
-            "trusted_device": device_token
+            "ip": ip
         }
     return token
 
@@ -292,40 +358,6 @@ def kill_session(handler):
             _sessions.pop(session_morsel.value, None)
 
 
-def get_trusted_device(handler):
-    """Check if request has a valid trusted device cookie."""
-    cookie_header = handler.headers.get("Cookie", "")
-    if not cookie_header:
-        return None
-    cookies = SimpleCookie()
-    try:
-        cookies.load(cookie_header)
-    except Exception:
-        return None
-    dev = cookies.get("clara_device")
-    if not dev:
-        return None
-    token = dev.value
-    with _auth_lock:
-        info = _trusted_devices.get(token)
-        if info and _now() - info["created"] < TRUSTED_DEVICE_LIFETIME:
-            info["last_used"] = _now()
-            return token
-        _trusted_devices.pop(token, None)
-    return None
-
-
-def create_trusted_device():
-    """Create a new trusted device token."""
-    token = secrets.token_urlsafe(48)
-    with _auth_lock:
-        _trusted_devices[token] = {
-            "created": _now(),
-            "last_used": _now()
-        }
-    return token
-
-
 def get_client_ip(handler):
     """Get client IP, respecting Fly.io's Fly-Client-IP header."""
     return (handler.headers.get("Fly-Client-IP") or
@@ -333,17 +365,12 @@ def get_client_ip(handler):
             handler.client_address[0])
 
 
-def set_session_cookie(handler, session_token, device_token=None):
+def set_session_cookie(handler, session_token):
     """Set httpOnly secure session cookie on the response."""
     handler.send_header(
         "Set-Cookie",
         f"clara_session={session_token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age={SESSION_LIFETIME}"
     )
-    if device_token:
-        handler.send_header(
-            "Set-Cookie",
-            f"clara_device={device_token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age={TRUSTED_DEVICE_LIFETIME}"
-        )
 
 
 def clear_session_cookie(handler):
@@ -817,6 +844,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
         
         # ── Main chat page ──
         if path == "/":
+            audit_log("page_visit", detail="chat")
             chat_html = TEMPLATE_DIR / "chat.html"
             if chat_html.exists():
                 self.send_file(chat_html)
@@ -826,6 +854,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
         
         # ── Brain dashboard ──
         if path == "/brain":
+            audit_log("page_visit", detail="brain")
             brain_html = TEMPLATE_DIR / "brain.html"
             if brain_html.exists():
                 self.send_file(brain_html)
@@ -835,6 +864,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
         
         # ── Knowledge Explorer ──
         if path == "/explorer":
+            audit_log("page_visit", detail="explorer")
             explorer_html = TEMPLATE_DIR / "explorer.html"
             if explorer_html.exists():
                 self.send_file(explorer_html)
@@ -844,6 +874,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
         
         # ── From Ryan (private upload page) ──
         if path == "/from-ryan":
+            audit_log("page_visit", detail="from-ryan")
             fr_html = TEMPLATE_DIR / "from-ryan.html"
             if fr_html.exists():
                 self.send_file(fr_html)
@@ -853,11 +884,21 @@ class ClaraHandler(BaseHTTPRequestHandler):
         
         # ── Katie's Collection ──
         if path == "/collection":
+            audit_log("page_visit", detail="collection")
             col_html = TEMPLATE_DIR / "collection.html"
             if col_html.exists():
                 self.send_file(col_html)
             else:
                 self.send_html("<h1>Collection</h1><p>Template not found.</p>")
+            return
+        
+        # ── Audit summary (authenticated) ──
+        if path == "/api/audit-summary":
+            params = parse_qs(parsed.query)
+            since = params.get("since", [None])[0]
+            since_ts = float(since) if since else None
+            summary = get_audit_summary_since(since_ts)
+            self.send_json(summary)
             return
         
         # ── API: All images (auth required) ──
@@ -1063,7 +1104,6 @@ class ClaraHandler(BaseHTTPRequestHandler):
             try:
                 data = json.loads(body) if body else {}
                 submitted = data.get("passphrase", "")
-                device_token = get_trusted_device(self)
                 
                 if hmac.compare_digest(submitted, CLARA_PASSWORD):
                     # Passphrase correct — send SMS code
@@ -1074,39 +1114,17 @@ class ClaraHandler(BaseHTTPRequestHandler):
                     if sms_sent:
                         self.send_json({"ok": True, "session_key": session_key, "step": "sms"})
                     else:
-                        # Twilio not configured — skip SMS, create session directly
-                        token = create_session(ip, device_token)
-                        self.send_response(200)
-                        self.send_header("Content-Type", "application/json")
-                        set_session_cookie(self, token, device_token)
-                        self.end_headers()
-                        self.wfile.write(json.dumps({"ok": True, "step": "done"}).encode("utf-8"))
+                        # SMS failed — deny login (never skip 2FA)
+                        audit_log("sms_send_failed", ip=ip)
+                        self.send_json({"error": "sms_failed", "message": "Couldn't send verification code. Try again."}, 503)
                 else:
                     record_failed_passphrase(ip)
+                    audit_log("auth_fail_passphrase", ip=ip)
                     lo = _lockouts.get(ip, {})
                     remaining = MAX_PASSPHRASE_ATTEMPTS - lo.get("passphrase_fails", 0)
                     self.send_json({"error": "wrong", "remaining": max(0, remaining)}, 401)
             except Exception as e:
                 self.send_json({"error": str(e)}, 500)
-            return
-        
-        # ── Auth: Send SMS code (for trusted devices skipping passphrase) ──
-        if path == "/auth/send-code":
-            ip = get_client_ip(self)
-            if is_locked_out(ip):
-                self.send_json({"error": "locked"}, 429)
-                return
-            device_token = get_trusted_device(self)
-            if not device_token:
-                self.send_json({"error": "not_trusted"}, 401)
-                return
-            session_key = f"{ip}_{_now()}"
-            code = create_pending_code(session_key)
-            sms_sent = send_sms_code(code)
-            if sms_sent:
-                self.send_json({"ok": True, "session_key": session_key})
-            else:
-                self.send_json({"error": "sms_failed"}, 500)
             return
         
         # ── Auth: Verify SMS code ──
@@ -1119,23 +1137,20 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 data = json.loads(body) if body else {}
                 session_key = data.get("session_key", "")
                 submitted_code = data.get("code", "")
-                trust_device = data.get("trust", False)
                 
                 if verify_pending_code(session_key, submitted_code):
                     # Success! Create session
-                    device_token = get_trusted_device(self)
-                    new_device = None
-                    if trust_device and not device_token:
-                        new_device = create_trusted_device()
-                    token = create_session(ip, device_token or new_device)
+                    token = create_session(ip)
                     clear_lockout(ip)
+                    audit_log("auth_success", ip=ip)
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json")
-                    set_session_cookie(self, token, new_device)
+                    set_session_cookie(self, token)
                     self.end_headers()
                     self.wfile.write(json.dumps({"ok": True, "step": "done"}).encode("utf-8"))
                 else:
                     record_failed_code(ip)
+                    audit_log("auth_fail_code", ip=ip)
                     self.send_json({"error": "wrong_code"}, 401)
             except Exception as e:
                 self.send_json({"error": str(e)}, 500)
@@ -1143,6 +1158,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
         
         # ── Auth: Quick lock (kill session) ──
         if path == "/auth/lock":
+            audit_log("lock_manual", ip=get_client_ip(self))
             kill_session(self)
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -1192,6 +1208,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 # ── Phone whitelist: only Katie can text Clara ──
                 if KATIE_PHONE and sms_from != KATIE_PHONE:
                     print(f"SMS rejected: unknown sender {sms_from}")
+                    audit_log("sms_rejected", detail=sms_from)
                     self.send_response(200)
                     self.send_header("Content-Type", "text/xml")
                     self.end_headers()
@@ -1206,6 +1223,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
                     return
                 
                 log_message("user", f"[SMS from {sms_from}] {sms_body}")
+                audit_log("sms_received")
                 history = get_today_history()[:-1]
                 response = call_claude(sms_body, history)
                 log_message("assistant", f"[SMS reply] {response}")

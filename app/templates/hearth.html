@@ -167,22 +167,6 @@
             cursor: not-allowed;
         }
 
-        /* ── Trust device checkbox ── */
-        .trust-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 20px;
-            font-size: 0.82rem;
-            color: var(--weathered-stone);
-        }
-        .trust-row input[type="checkbox"] {
-            accent-color: var(--kiln-gold);
-            width: 16px;
-            height: 16px;
-        }
-
         /* ── Status messages ── */
         .status {
             margin-top: 16px;
@@ -298,10 +282,6 @@
                            autocomplete="one-time-code"
                            required>
                 </div>
-                <div class="trust-row">
-                    <input type="checkbox" id="trust-device" checked>
-                    <label for="trust-device">Remember this device</label>
-                </div>
                 <button type="submit" class="submit-btn" id="verify-btn">Verify</button>
             </form>
             <div class="loading" id="loading-2"><div class="spinner"></div></div>
@@ -312,6 +292,13 @@
         <div class="locked-message" id="locked-state">
             <h2>Too many attempts</h2>
             <p>Please wait a while and try again.</p>
+        </div>
+
+        <!-- Since-last-visit summary (shown after successful auth) -->
+        <div id="step-summary" class="auth-step" style="display:none;">
+            <div id="summary-card" style="text-align:left; font-size:0.85rem; line-height:1.6; padding: 8px 0;">
+            </div>
+            <button class="submit-btn" id="continue-btn" onclick="window.location.href='/'">Continue to Clara</button>
         </div>
     </div>
 
@@ -326,16 +313,16 @@
         const stepPassphrase = $('step-passphrase');
         const stepSms        = $('step-sms');
         const lockedState    = $('locked-state');
+        const stepSummary    = $('step-summary');
 
         let sessionKey = null;
 
         function showStep(step) {
-            [stepPassphrase, stepSms, lockedState].forEach(s => {
+            [stepPassphrase, stepSms, lockedState, stepSummary].forEach(s => {
                 s.classList.remove('active');
                 s.style.display = 'none';
             });
             step.style.display = 'block';
-            // Trigger reflow for animation
             void step.offsetWidth;
             step.classList.add('active');
         }
@@ -349,24 +336,49 @@
             $(id).classList.toggle('active', on);
         }
 
-        // ── Check for trusted device (auto-send code) ──
-        function checkTrustedDevice() {
-            fetch('/auth/send-code', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({}),
-                credentials: 'same-origin'
-            })
+        // ── Show audit summary after login ──
+        function showAuditSummary() {
+            // Get the timestamp of last visit from localStorage
+            const lastVisit = localStorage.getItem('clara_last_visit');
+            const sinceParam = lastVisit ? '?since=' + lastVisit : '';
+
+            // Record this visit
+            localStorage.setItem('clara_last_visit', String(Date.now() / 1000));
+
+            fetch('/api/audit-summary' + sinceParam, { credentials: 'same-origin' })
             .then(r => r.json())
-            .then(data => {
-                if (data.ok && data.session_key) {
-                    sessionKey = data.session_key;
-                    showStep(stepSms);
-                    $('sms-code').focus();
+            .then(summary => {
+                const card = $('summary-card');
+                const total = summary.total_suspicious || 0;
+                const fails = summary.failed_passphrases || 0;
+                const codeFails = summary.failed_codes || 0;
+                const smsBlocked = summary.sms_rejected || 0;
+
+                if (total === 0) {
+                    card.innerHTML =
+                        '<div style="color: var(--new-growth); text-align: center; margin-bottom: 16px;">' +
+                        '<span style="font-size: 1.4rem;">&#10003;</span>' +
+                        '<div style="margin-top: 8px;">All quiet. No failed login attempts' +
+                        (lastVisit ? ' since your last visit.' : '.') + '</div></div>';
+                } else {
+                    let alertHtml = '<div style="color: var(--ember); text-align: center; margin-bottom: 16px;">' +
+                        '<span style="font-size: 1.4rem;">&#9888;</span>' +
+                        '<div style="margin-top: 8px; font-weight: 500;">Activity detected' +
+                        (lastVisit ? ' since your last visit' : '') + ':</div></div>' +
+                        '<div style="margin: 12px 0; padding: 12px 16px; background: rgba(163,74,40,0.1); border-radius: 8px; border: 1px solid rgba(163,74,40,0.2);">';
+                    if (fails > 0) alertHtml += '<div>' + fails + ' failed passphrase attempt' + (fails > 1 ? 's' : '') + '</div>';
+                    if (codeFails > 0) alertHtml += '<div>' + codeFails + ' failed SMS code attempt' + (codeFails > 1 ? 's' : '') + '</div>';
+                    if (smsBlocked > 0) alertHtml += '<div>' + smsBlocked + ' blocked text' + (smsBlocked > 1 ? 's' : '') + ' from unknown number' + (smsBlocked > 1 ? 's' : '') + '</div>';
+                    alertHtml += '<div style="margin-top: 6px; font-size: 0.78rem; color: var(--weathered-stone);">No one got in.</div>';
+                    alertHtml += '</div>';
+                    card.innerHTML = alertHtml;
                 }
-                // If not trusted, stay on passphrase step (default)
+                showStep(stepSummary);
             })
-            .catch(() => {});
+            .catch(() => {
+                // If audit fetch fails, just go to chat
+                window.location.href = '/';
+            });
         }
 
         // ── Step 1: Passphrase ──
@@ -399,19 +411,18 @@
                     sessionKey = data.session_key;
                     showStep(stepSms);
                     $('sms-code').focus();
-                } else if (data.ok && data.step === 'done') {
-                    // SMS not configured — passphrase alone was enough
-                    window.location.href = '/';
+                } else if (data.error === 'sms_failed') {
+                    setStatus($('status-1'), data.message || 'Could not send verification code.', 'error');
                 } else {
                     const msg = data.remaining !== undefined && data.remaining <= 2
-                        ? `That's not right. ${data.remaining} attempt${data.remaining !== 1 ? 's' : ''} left.`
+                        ? "That's not right. " + data.remaining + ' attempt' + (data.remaining !== 1 ? 's' : '') + ' left.'
                         : "That's not quite it.";
                     setStatus($('status-1'), msg, 'error');
                     $('passphrase').value = '';
                     $('passphrase').focus();
                 }
             })
-            .catch(err => {
+            .catch(function() {
                 setLoading('loading-1', false);
                 btn.disabled = false;
                 setStatus($('status-1'), 'Something went wrong.', 'error');
@@ -434,8 +445,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     session_key: sessionKey,
-                    code: code,
-                    trust: $('trust-device').checked
+                    code: code
                 }),
                 credentials: 'same-origin'
             })
@@ -449,14 +459,15 @@
                     return;
                 }
                 if (data.ok && data.step === 'done') {
-                    window.location.href = '/';
+                    // Show audit summary instead of going straight to chat
+                    showAuditSummary();
                 } else {
-                    setStatus($('status-2'), 'Code didn\'t match. Check your phone and try again.', 'error');
+                    setStatus($('status-2'), "Code didn't match. Check your phone and try again.", 'error');
                     $('sms-code').value = '';
                     $('sms-code').focus();
                 }
             })
-            .catch(err => {
+            .catch(function() {
                 setLoading('loading-2', false);
                 btn.disabled = false;
                 setStatus($('status-2'), 'Something went wrong.', 'error');
@@ -470,9 +481,6 @@
                 $('sms-form').dispatchEvent(new Event('submit'));
             }
         });
-
-        // ── On load: check for trusted device ──
-        checkTrustedDevice();
 
         // Focus passphrase field
         $('passphrase').focus();
