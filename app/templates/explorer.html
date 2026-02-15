@@ -327,6 +327,21 @@
 
         .close-panel:hover { color: var(--text); }
 
+        /* ── Panel Image ── */
+        .panel-image {
+            margin: 12px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: var(--bg-control);
+        }
+
+        .panel-image img {
+            width: 100%;
+            display: block;
+            border-radius: 7px;
+        }
+
         /* ── Graph Controls ── */
         .controls {
             position: absolute;
@@ -1015,6 +1030,26 @@
         if (node.ts) {
             h += '<div class="created">' + new Date(node.ts).toLocaleDateString('en-US',
                 { month: 'short', day: 'numeric', year: 'numeric' }) + '</div>';
+        }
+
+        // Show image for Image entities
+        if (node.type === 'Image') {
+            var imgUrl = node.image_url || node.thumbnail_url || '';
+            if (!imgUrl) {
+                // Try to find URL in observations
+                for (var i = 0; i < node.observations.length; i++) {
+                    var ob = node.observations[i];
+                    if (ob.indexOf('URL:') === 0) {
+                        imgUrl = ob.replace('URL:', '').trim();
+                        break;
+                    }
+                }
+            }
+            if (imgUrl) {
+                h += '<div class="panel-image">';
+                h += '<img src="' + esc(imgUrl) + '" alt="' + esc(node.id) + '" onerror="this.parentElement.style.display=\'none\'">';
+                h += '</div>';
+            }
         }
 
         h += '<div class="metrics">';
