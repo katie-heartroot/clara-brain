@@ -543,6 +543,10 @@
                 <label>Mouse gravity</label>
                 <input type="checkbox" onchange="toggleMouseGravity(this.checked)">
             </div>
+            <div class="control-row">
+                <label>Katie's light</label>
+                <input type="checkbox" checked onchange="toggleKatieLight(this.checked)">
+            </div>
         </div>
 
         <div class="color-legend" id="color-legend"></div>
@@ -569,6 +573,7 @@
     var nodeStyle = 'glass';
     var fanHover = false;
     var mouseGravity = false;
+    var katieLight = true;
     var mouseX = 0, mouseY = 0;
     var hintTimer;
 
@@ -820,7 +825,6 @@
         mouseGravity = on;
         if (on && sim) {
             sim.alphaTarget(0.05).restart();
-            // Track mouse continuously to keep sim warm
             svg.on('mousemove.gravity', function() {
                 if (mouseGravity && sim) sim.alpha(Math.max(sim.alpha(), 0.1));
             });
@@ -828,6 +832,16 @@
             if (sim) sim.alphaTarget(0);
             svg.on('mousemove.gravity', null);
         }
+    }
+
+    function toggleKatieLight(on) {
+        katieLight = on;
+        // Show/hide starburst elements
+        d3.selectAll('.katie-halo, .katie-rays, .katie-core')
+            .style('display', on ? null : 'none');
+        // Show/hide normal circle fallback
+        d3.selectAll('.katie-normal')
+            .style('display', on ? 'none' : null);
     }
 
     // =============================================
@@ -1003,7 +1017,18 @@
         nodeG.each(function(d) {
             var el = d3.select(this);
             if (d.type === 'Image' && d.thumbnail_url) return; // handled below
-            if (d.id === 'Katie-Tudor') return; // handled as starburst
+            if (d.id === 'Katie-Tudor') {
+                // Always render a normal circle (hidden when starburst is on)
+                el.append('circle')
+                    .attr('class', 'node-circle katie-normal')
+                    .attr('r', rad(d))
+                    .attr('fill', 'url(#grad-' + d.type + ')')
+                    .attr('stroke', d.color)
+                    .attr('stroke-width', 1.5)
+                    .attr('filter', 'url(#glass)')
+                    .style('display', katieLight ? 'none' : null);
+                return;
+            }
             el.append('circle')
                 .attr('class', 'node-circle')
                 .attr('r', rad(d))
