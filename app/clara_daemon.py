@@ -39,6 +39,7 @@ from datetime import datetime
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, quote
+import urllib.error
 
 # ─── Configuration ──────────────────────────────────────────────────────────
 
@@ -190,7 +191,12 @@ Here is everything you know:
         with urllib.request.urlopen(req, timeout=60) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             return result["content"][0]["text"]
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        print(f"Claude API error {e.code}: {error_body[:500]}")
+        return f"Clara couldn't respond right now. (Error: {e})"
     except Exception as e:
+        print(f"Claude API exception: {e}")
         return f"Clara couldn't respond right now. (Error: {e})"
 
 # ─── Session Logging ────────────────────────────────────────────────────────
