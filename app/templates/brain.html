@@ -748,12 +748,18 @@
             document.getElementById('s-relations').textContent = graphLinks.length;
             document.getElementById('s-observations').textContent = totalObs;
 
-            // Circle layout
-            graphNodes.forEach((n, i) => {
-                const angle = (2 * Math.PI * i) / graphNodes.length;
-                const r = 300 + graphNodes.length * 10;
-                n.x = r * Math.cos(angle) + (Math.random() - 0.5) * 40;
-                n.y = r * Math.sin(angle) + (Math.random() - 0.5) * 40;
+            // Initial layout: place high-degree nodes near center, others in rings
+            const sorted = [...graphNodes].sort((a, b) => b.degree - a.degree);
+            const n = graphNodes.length;
+            sorted.forEach((node, i) => {
+                const ring = Math.floor(i / 8);  // 8 nodes per ring
+                const posInRing = i % 8;
+                const ringCount = Math.min(8, n - ring * 8);
+                const angle = (2 * Math.PI * posInRing) / ringCount + ring * 0.4;
+                const r = 60 + ring * 90;
+                node.x = r * Math.cos(angle) + (Math.random() - 0.5) * 20;
+                node.y = r * Math.sin(angle) + (Math.random() - 0.5) * 20;
+                node.vx = 0; node.vy = 0;
             });
 
             // Legend
@@ -772,53 +778,90 @@
     let settleAnim = null;
     let drawFrameFn = null; // set by renderGraph, used by animateSettle
 
+    // --- Physics engine (redesigned) ---
+    // Adaptive parameters based on graph size
+    function getPhysicsParams() {
+        const n = graphNodes.length || 1;
+        return {
+            // Repulsion scales with node count so nodes don't pile up
+            repulsion: Math.min(1800, 600 + n * 18),
+            // Spring attraction — gentle, lets things breathe
+            attraction: 0.025,
+            // Rest length adapts: fewer nodes = tighter, more = roomier
+            restLength: Math.min(140, 55 + n * 1.2),
+            // Strong damping = nodes settle fast, no bouncing
+            damping: 0.72,
+            // Center gravity keeps the graph from drifting
+            centerG: 0.008,
+            // Minimum distance to prevent explosions
+            minDist: 15,
+        };
+    }
+
     function forceTick() {
         const nodeMap = {};
         graphNodes.forEach(n => { nodeMap[n.id] = n; });
-        const repulsion = 4000, attraction = 0.012, damping = 0.85, centerG = 0.002;
+        const p = getPhysicsParams();
 
+        // Node-node repulsion (inverse-linear, capped)
         for (let i = 0; i < graphNodes.length; i++) {
             for (let j = i + 1; j < graphNodes.length; j++) {
                 const a = graphNodes[i], b = graphNodes[j];
                 let dx = a.x - b.x, dy = a.y - b.y;
-                let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                let force = repulsion / (dist * dist);
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < p.minDist) dist = p.minDist;
+                // Inverse-linear falloff (softer than inverse-square)
+                let force = p.repulsion / dist;
+                // Boost repulsion when nodes overlap
+                const overlap = (a.radius + b.radius) * 1.5;
+                if (dist < overlap) force *= 2.5;
                 let fx = (dx / dist) * force, fy = (dy / dist) * force;
                 a.vx += fx; a.vy += fy;
                 b.vx -= fx; b.vy -= fy;
             }
         }
+
+        // Spring attraction along edges
         for (const l of graphLinks) {
             const s = nodeMap[l.source], t = nodeMap[l.target];
             if (!s || !t) continue;
             let dx = t.x - s.x, dy = t.y - s.y;
             let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            let force = (dist - 180) * attraction;
+            // Hooke's law: pull toward rest length
+            let displacement = dist - p.restLength;
+            let force = displacement * p.attraction;
             let fx = (dx / dist) * force, fy = (dy / dist) * force;
             s.vx += fx; s.vy += fy;
             t.vx -= fx; t.vy -= fy;
         }
+
+        // Center gravity + velocity damping
         graphNodes.forEach(n => {
-            n.vx -= n.x * centerG; n.vy -= n.y * centerG;
-            n.vx *= damping; n.vy *= damping;
-            n.x += n.vx; n.y += n.vy;
+            n.vx -= n.x * p.centerG;
+            n.vy -= n.y * p.centerG;
+            n.vx *= p.damping;
+            n.vy *= p.damping;
+            n.x += n.vx;
+            n.y += n.vy;
         });
     }
 
     function simulateForces() {
-        for (let iter = 0; iter < 400; iter++) { forceTick(); }
+        // Quick burn-in, then animated settle handles the rest
+        for (let iter = 0; iter < 200; iter++) { forceTick(); }
     }
 
     function animateSettle() {
         if (settleAnim) cancelAnimationFrame(settleAnim);
         if (!drawFrameFn) return;
-        let framesLeft = 180;
+        let framesLeft = 120;
         function step() {
-            forceTick();
+            // Run 2 physics steps per frame for faster convergence
+            forceTick(); forceTick();
             drawFrameFn();
             framesLeft--;
             const maxV = Math.max(...graphNodes.map(n => Math.abs(n.vx) + Math.abs(n.vy)));
-            if (framesLeft > 0 && maxV > 0.08) {
+            if (framesLeft > 0 && maxV > 0.05) {
                 settleAnim = requestAnimationFrame(step);
             } else {
                 settleAnim = null;
