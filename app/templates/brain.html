@@ -6,6 +6,7 @@
     <title>Clara — Brain</title>
     <meta name="theme-color" content="#141c17">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         :root {
             --bg: #141c17;
@@ -183,14 +184,56 @@
             border-color: var(--accent);
         }
 
-        #graph-canvas {
+        #graph-view {
             width: 100%;
             height: 380px;
             display: block;
             cursor: grab;
+            overflow: hidden;
         }
 
-        #graph-canvas:active { cursor: grabbing; }
+        #graph-view:active { cursor: grabbing; }
+
+        #graph-view svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .link {
+            fill: none;
+            stroke: var(--new-growth);
+            stroke-opacity: 0.22;
+            transition: stroke-opacity 0.15s;
+        }
+        .link.hl { stroke: var(--accent) !important; stroke-opacity: 0.75 !important; stroke-width: 2 !important; }
+        .link.dim { stroke-opacity: 0.03 !important; }
+
+        .node-g { cursor: pointer; }
+        .node-g.dim { opacity: 0.08; }
+        .node-g text {
+            font-family: 'Lora', serif;
+            fill: var(--text);
+            font-size: 9px;
+            pointer-events: none;
+            text-anchor: middle;
+        }
+
+        #graph-tip {
+            position: fixed;
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 7px 11px;
+            font-size: 0.75rem;
+            color: var(--text);
+            pointer-events: none;
+            z-index: 20;
+            max-width: 260px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        #graph-tip strong { color: var(--accent); }
+        #graph-tip .sub { color: var(--text-dim); font-size: 0.68rem; }
 
         .graph-legend {
             display: flex;
@@ -479,7 +522,7 @@
             .stats-bar { gap: 20px; padding: 14px 16px; }
             .stat-val { font-size: 1.4rem; }
             .container { padding: 16px 12px; }
-            #graph-canvas { height: 280px; }
+            #graph-view { height: 280px; }
             .graph-legend { gap: 10px; }
             .hero-nav a { padding: 4px 10px; font-size: 0.7rem; }
         }
@@ -534,7 +577,8 @@
                 <h2>Knowledge Graph</h2>
                 <a href="/explorer">Full Explorer &rarr;</a>
             </div>
-            <canvas id="graph-canvas"></canvas>
+            <div id="graph-view"></div>
+            <div id="graph-tip"></div>
             <div class="graph-legend" id="graph-legend"></div>
         </div>
 
@@ -676,32 +720,35 @@
     }
 
     // =============================================
-    //  KNOWLEDGE GRAPH (Canvas)
+    //  KNOWLEDGE GRAPH (D3 SVG)
     // =============================================
-    let graphNodes = [], graphLinks = [];
-    let gT = { x: 0, y: 0, scale: 1 };
-    let dragNode = null, hoveredNode = null;
-    let isPanning = false, panStart = { x: 0, y: 0 };
+    var graphNodes = [], graphLinks = [];
+    var graphSim = null;
+    var imgSize = 28; // half-size for image node squares
+
+    function rad(d) { return Math.max(5, Math.sqrt(d.obsCount) * 3.2 + 4); }
+    function trunc(s, n) { return s.length > n ? s.slice(0, n - 1) + '\u2026' : s; }
+    function sid(l) { return typeof l.source === 'object' ? l.source.id : l.source; }
+    function tid(l) { return typeof l.target === 'object' ? l.target.id : l.target; }
 
     async function loadGraph() {
         try {
-            const kg = await fetchJSON('/api/knowledge');
-            const entities = kg.entities || {};
-            const relations = kg.relations || [];
+            var kg = await fetchJSON('/api/knowledge');
+            var entities = kg.entities || {};
+            var relations = kg.relations || [];
 
-            graphNodes = Object.entries(entities).map(([name, data]) => {
-                const obs = data.observations || [];
-                // Extract image URL from observations
-                let imgUrl = data.thumbnail_url || data.image_url || null;
+            graphNodes = Object.entries(entities).map(function(pair) {
+                var name = pair[0], data = pair[1];
+                var obs = data.observations || [];
+                var imgUrl = data.thumbnail_url || data.image_url || null;
                 if (!imgUrl) {
-                    for (let i = 0; i < obs.length; i++) {
-                        if (obs[i].indexOf('URL:') === 0) {
-                            imgUrl = obs[i].replace('URL:', '').trim();
+                    for (var j = 0; j < obs.length; j++) {
+                        if (obs[j].indexOf('URL:') === 0) {
+                            imgUrl = obs[j].replace('URL:', '').trim();
                             break;
                         }
                     }
                 }
-                // Rewrite heartroot.art to github.io until SSL cert provisions
                 if (imgUrl && imgUrl.indexOf('https://heartroot.art/') === 0) {
                     imgUrl = imgUrl.replace('https://heartroot.art/', 'https://katie-heartroot.github.io/heartroot-art/');
                 }
@@ -710,377 +757,220 @@
                     type: data.entity_type || 'Unknown',
                     observations: obs,
                     obsCount: obs.length,
-                    x: 0, y: 0, vx: 0, vy: 0,
                     color: typeColor(data.entity_type),
-                    radius: Math.max(6, Math.sqrt(obs.length) * 3 + 5),
+                    degree: 0,
                     thumbnail_url: imgUrl,
-                    image_url: imgUrl,
-                    _img: null, _imgLoaded: false,
                 };
             });
 
-            // Preload thumbnail images for Image entities
-            graphNodes.forEach(n => {
-                if (n.thumbnail_url) {
-                    const img = new Image();
-                    img.onload = () => { n._img = img; n._imgLoaded = true; if (drawFrameFn) drawFrameFn(); };
-                    img.src = n.thumbnail_url;
-                }
+            var nodeSet = new Set(graphNodes.map(function(n) { return n.id; }));
+            graphLinks = relations.filter(function(r) {
+                return nodeSet.has(r.from_entity || r.from) && nodeSet.has(r.to_entity || r.to);
+            }).map(function(r) {
+                return {
+                    source: r.from_entity || r.from,
+                    target: r.to_entity || r.to,
+                    type: r.relation_type || '',
+                };
             });
 
-            const nodeSet = new Set(graphNodes.map(n => n.id));
-            graphLinks = relations.filter(r => nodeSet.has(r.from_entity || r.from) && nodeSet.has(r.to_entity || r.to)).map(r => ({
-                source: r.from_entity || r.from, target: r.to_entity || r.to, type: r.relation_type || '',
-            }));
-
-            const deg = {};
-            graphLinks.forEach(l => {
-                deg[l.source] = (deg[l.source] || 0) + 1;
-                deg[l.target] = (deg[l.target] || 0) + 1;
-            });
-            graphNodes.forEach(n => {
-                n.degree = deg[n.id] || 0;
-                n.radius = Math.max(6, Math.sqrt(n.obsCount + n.degree) * 3 + 5);
+            // Degree count
+            graphLinks.forEach(function(l) {
+                var s = graphNodes.find(function(n) { return n.id === sid(l); });
+                var t = graphNodes.find(function(n) { return n.id === tid(l); });
+                if (s) s.degree++;
+                if (t) t.degree++;
             });
 
-            const totalObs = graphNodes.reduce((s, n) => s + n.obsCount, 0);
+            var totalObs = graphNodes.reduce(function(s, n) { return s + n.obsCount; }, 0);
             document.getElementById('s-entities').textContent = graphNodes.length;
             document.getElementById('s-relations').textContent = graphLinks.length;
             document.getElementById('s-observations').textContent = totalObs;
 
-            // Initial layout: place high-degree nodes near center, others in rings
-            const sorted = [...graphNodes].sort((a, b) => b.degree - a.degree);
-            const n = graphNodes.length;
-            sorted.forEach((node, i) => {
-                const ring = Math.floor(i / 8);  // 8 nodes per ring
-                const posInRing = i % 8;
-                const ringCount = Math.min(8, n - ring * 8);
-                const angle = (2 * Math.PI * posInRing) / ringCount + ring * 0.4;
-                const r = 60 + ring * 90;
-                node.x = r * Math.cos(angle) + (Math.random() - 0.5) * 20;
-                node.y = r * Math.sin(angle) + (Math.random() - 0.5) * 20;
-                node.vx = 0; node.vy = 0;
-            });
-
             // Legend
-            const types = [...new Set(graphNodes.map(n => n.type))].sort();
-            document.getElementById('graph-legend').innerHTML = types.map(t =>
-                '<div class="legend-item"><div class="legend-dot" style="background:' + typeColor(t) + '"></div>' + t.replace(/_/g, ' ') + '</div>'
-            ).join('');
+            var types = {};
+            graphNodes.forEach(function(n) { types[n.type] = 1; });
+            document.getElementById('graph-legend').innerHTML = Object.keys(types).sort().map(function(t) {
+                return '<div class="legend-item"><div class="legend-dot" style="background:' + typeColor(t) + '"></div>' + t.replace(/_/g, ' ') + '</div>';
+            }).join('');
 
-            simulateForces();
-            renderGraph();
+            renderGraphD3();
         } catch (err) {
             console.error('Graph load error:', err);
         }
     }
 
-    let settleAnim = null;
-    let drawFrameFn = null; // set by renderGraph, used by animateSettle
+    function renderGraphD3() {
+        var box = document.getElementById('graph-view');
+        box.innerHTML = '';
+        if (!graphNodes.length) return;
 
-    // --- Physics engine (redesigned) ---
-    // Adaptive parameters based on graph size
-    function getPhysicsParams() {
-        const n = graphNodes.length || 1;
-        return {
-            // Repulsion scales with node count so nodes don't pile up
-            repulsion: Math.min(1800, 600 + n * 18),
-            // Spring attraction — gentle, lets things breathe
-            attraction: 0.025,
-            // Rest length adapts: fewer nodes = tighter, more = roomier
-            restLength: Math.min(140, 55 + n * 1.2),
-            // Strong damping = nodes settle fast, no bouncing
-            damping: 0.72,
-            // Center gravity keeps the graph from drifting
-            centerG: 0.008,
-            // Minimum distance to prevent explosions
-            minDist: 15,
-        };
-    }
+        var w = box.clientWidth || 800;
+        var h = box.clientHeight || 380;
 
-    function forceTick() {
-        const nodeMap = {};
-        graphNodes.forEach(n => { nodeMap[n.id] = n; });
-        const p = getPhysicsParams();
+        var svg = d3.select(box).append('svg').attr('width', w).attr('height', h);
 
-        // Node-node repulsion (inverse-linear, capped)
-        for (let i = 0; i < graphNodes.length; i++) {
-            for (let j = i + 1; j < graphNodes.length; j++) {
-                const a = graphNodes[i], b = graphNodes[j];
-                let dx = a.x - b.x, dy = a.y - b.y;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < p.minDist) dist = p.minDist;
-                // Inverse-linear falloff (softer than inverse-square)
-                let force = p.repulsion / dist;
-                // Boost repulsion when nodes overlap
-                const overlap = (a.radius + b.radius) * 1.5;
-                if (dist < overlap) force *= 2.5;
-                let fx = (dx / dist) * force, fy = (dy / dist) * force;
-                a.vx += fx; a.vy += fy;
-                b.vx -= fx; b.vy -= fy;
-            }
-        }
+        // ── SVG Defs: filters & gradients ──
+        var defs = svg.append('defs');
 
-        // Spring attraction along edges
-        for (const l of graphLinks) {
-            const s = nodeMap[l.source], t = nodeMap[l.target];
-            if (!s || !t) continue;
-            let dx = t.x - s.x, dy = t.y - s.y;
-            let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-            // Hooke's law: pull toward rest length
-            let displacement = dist - p.restLength;
-            let force = displacement * p.attraction;
-            let fx = (dx / dist) * force, fy = (dy / dist) * force;
-            s.vx += fx; s.vy += fy;
-            t.vx -= fx; t.vy -= fy;
-        }
+        // Glow filter
+        var glow = defs.append('filter').attr('id', 'glow');
+        glow.append('feGaussianBlur').attr('stdDeviation', '3').attr('result', 'blur');
+        glow.append('feMerge').selectAll('feMergeNode').data(['blur', 'SourceGraphic']).enter()
+            .append('feMergeNode').attr('in', function(d) { return d; });
 
-        // Center gravity + velocity damping
-        graphNodes.forEach(n => {
-            n.vx -= n.x * p.centerG;
-            n.vy -= n.y * p.centerG;
-            n.vx *= p.damping;
-            n.vy *= p.damping;
-            n.x += n.vx;
-            n.y += n.vy;
+        // Glass filter
+        var glass = defs.append('filter').attr('id', 'glass');
+        glass.append('feGaussianBlur').attr('in', 'SourceAlpha').attr('stdDeviation', '2').attr('result', 'shadow');
+        glass.append('feOffset').attr('in', 'shadow').attr('dx', '1').attr('dy', '2').attr('result', 'offShadow');
+        var glassMerge = glass.append('feMerge');
+        glassMerge.append('feMergeNode').attr('in', 'offShadow');
+        glassMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+        // Radial gradients for each type (glass look)
+        var usedTypes = {};
+        graphNodes.forEach(function(n) { usedTypes[n.type] = n.color; });
+        Object.keys(usedTypes).forEach(function(t) {
+            var grad = defs.append('radialGradient')
+                .attr('id', 'grad-' + t)
+                .attr('cx', '35%').attr('cy', '35%').attr('r', '65%');
+            grad.append('stop').attr('offset', '0%').attr('stop-color', '#fff').attr('stop-opacity', 0.4);
+            grad.append('stop').attr('offset', '50%').attr('stop-color', usedTypes[t]).attr('stop-opacity', 0.8);
+            grad.append('stop').attr('offset', '100%').attr('stop-color', usedTypes[t]).attr('stop-opacity', 1);
         });
-    }
 
-    function simulateForces() {
-        // Quick burn-in, then animated settle handles the rest
-        for (let iter = 0; iter < 200; iter++) { forceTick(); }
-    }
+        var g = svg.append('g');
 
-    function animateSettle() {
-        if (settleAnim) cancelAnimationFrame(settleAnim);
-        if (!drawFrameFn) return;
-        let framesLeft = 120;
-        function step() {
-            // Run 2 physics steps per frame for faster convergence
-            forceTick(); forceTick();
-            drawFrameFn();
-            framesLeft--;
-            const maxV = Math.max(...graphNodes.map(n => Math.abs(n.vx) + Math.abs(n.vy)));
-            if (framesLeft > 0 && maxV > 0.05) {
-                settleAnim = requestAnimationFrame(step);
+        // Zoom & pan
+        var zoom = d3.zoom().scaleExtent([0.15, 6]).on('zoom', function(ev) {
+            g.attr('transform', ev.transform);
+        });
+        svg.call(zoom);
+
+        // Links
+        var link = g.selectAll('.link')
+            .data(graphLinks).enter().append('line')
+            .attr('class', 'link')
+            .style('stroke', function(d) { return '#6b9e78'; })
+            .style('stroke-width', 1.2);
+
+        // Node groups
+        var nodeG = g.selectAll('.node-g')
+            .data(graphNodes).enter().append('g')
+            .attr('class', 'node-g')
+            .call(d3.drag()
+                .on('start', function(ev, d) {
+                    if (!ev.active) graphSim.alphaTarget(0.3).restart();
+                    d.fx = d.x; d.fy = d.y;
+                })
+                .on('drag', function(ev, d) { d.fx = ev.x; d.fy = ev.y; })
+                .on('end', function(ev, d) {
+                    if (!ev.active) graphSim.alphaTarget(0).alphaDecay(0.02).alpha(0.4).restart();
+                    d.fx = null; d.fy = null;
+                })
+            );
+
+        // Render nodes — circles for most, rounded-rect images for Image type
+        nodeG.each(function(d) {
+            var el = d3.select(this);
+            if (d.type === 'Image' && d.thumbnail_url) {
+                var clipId = 'clip-img-' + d.id.replace(/[^a-zA-Z0-9]/g, '_');
+                defs.append('clipPath').attr('id', clipId)
+                    .append('rect')
+                    .attr('x', -imgSize).attr('y', -imgSize)
+                    .attr('width', imgSize * 2).attr('height', imgSize * 2)
+                    .attr('rx', 5).attr('ry', 5);
+                el.append('rect')
+                    .attr('x', -imgSize).attr('y', -imgSize)
+                    .attr('width', imgSize * 2).attr('height', imgSize * 2)
+                    .attr('rx', 5).attr('ry', 5)
+                    .attr('fill', 'none')
+                    .attr('stroke', d.color).attr('stroke-width', 1.5)
+                    .attr('filter', 'url(#glow)');
+                el.append('image')
+                    .attr('href', d.thumbnail_url)
+                    .attr('width', imgSize * 2).attr('height', imgSize * 2)
+                    .attr('x', -imgSize).attr('y', -imgSize)
+                    .attr('clip-path', 'url(#' + clipId + ')')
+                    .attr('preserveAspectRatio', 'xMidYMid slice');
+                el.append('rect')
+                    .attr('x', -imgSize).attr('y', -imgSize)
+                    .attr('width', imgSize * 2).attr('height', imgSize * 2)
+                    .attr('rx', 5).attr('ry', 5)
+                    .attr('fill', 'none')
+                    .attr('stroke', d.color).attr('stroke-width', 1.5)
+                    .attr('stroke-opacity', 0.5);
             } else {
-                settleAnim = null;
+                el.append('circle')
+                    .attr('class', 'node-circle')
+                    .attr('r', rad(d))
+                    .attr('fill', 'url(#grad-' + d.type + ')')
+                    .attr('stroke', d.color)
+                    .attr('stroke-width', 1.5)
+                    .attr('filter', 'url(#glass)');
             }
-        }
-        settleAnim = requestAnimationFrame(step);
-    }
+        });
 
-    function renderGraph() {
-        const canvas = document.getElementById('graph-canvas');
-        const ctx = canvas.getContext('2d');
-        const rect = canvas.parentElement.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        const ch = window.innerWidth <= 600 ? 280 : 380;
+        // Labels
+        nodeG.append('text')
+            .attr('dy', function(d) {
+                return (d.type === 'Image' && d.thumbnail_url) ? imgSize + 12 : rad(d) + 12;
+            })
+            .text(function(d) { return trunc(d.id, 16); });
 
-        canvas.width = rect.width * dpr;
-        canvas.height = ch * dpr;
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = ch + 'px';
-        ctx.scale(dpr, dpr);
+        // ── Hover highlight ──
+        var tip = document.getElementById('graph-tip');
 
-        // Auto-fit
-        if (graphNodes.length && gT.scale === 1 && gT.x === 0) {
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            graphNodes.forEach(n => {
-                minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
-                minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+        nodeG.on('mouseover', function(ev, d) {
+            // Highlight neighbors
+            var conn = new Set([d.id]);
+            graphLinks.forEach(function(l) {
+                if (sid(l) === d.id) conn.add(tid(l));
+                if (tid(l) === d.id) conn.add(sid(l));
             });
-            const w = maxX - minX + 80, h = maxY - minY + 80;
-            gT.scale = Math.min(rect.width / w, ch / h, 2.5) * 0.85;
-            gT.x = rect.width / 2 - ((minX + maxX) / 2) * gT.scale;
-            gT.y = ch / 2 - ((minY + maxY) / 2) * gT.scale;
-        }
-
-        const sc = gT.scale, tx = gT.x, ty = gT.y;
-        const nodeMap = {};
-        graphNodes.forEach(n => { nodeMap[n.id] = n; });
-
-        function drawFrame() {
-            ctx.clearRect(0, 0, rect.width, ch);
-            ctx.fillStyle = '#0f1712';
-            ctx.fillRect(0, 0, rect.width, ch);
-
-            // Links
-            for (const l of graphLinks) {
-                const s = nodeMap[l.source], t = nodeMap[l.target];
-                if (!s || !t) continue;
-                const x1 = s.x * sc + tx, y1 = s.y * sc + ty;
-                const x2 = t.x * sc + tx, y2 = t.y * sc + ty;
-
-                if (hoveredNode && (l.source === hoveredNode.id || l.target === hoveredNode.id)) {
-                    ctx.globalAlpha = 0.7;
-                    ctx.strokeStyle = '#c4854c';
-                    ctx.lineWidth = 2;
-                } else {
-                    ctx.globalAlpha = 0.2;
-                    ctx.strokeStyle = '#6b9e78';
-                    ctx.lineWidth = 1;
-                }
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
-            }
-            ctx.globalAlpha = 1;
-
-            // Nodes
-            for (const n of graphNodes) {
-                const x = n.x * sc + tx, y = n.y * sc + ty;
-                const r = n.radius * Math.min(sc, 2);
-                if (x + r < 0 || x - r > rect.width || y + r < 0 || y - r > ch) continue;
-
-                let alpha = 1;
-                if (hoveredNode && hoveredNode.id !== n.id) {
-                    const connected = graphLinks.some(l =>
-                        (l.source === hoveredNode.id && l.target === n.id) ||
-                        (l.target === hoveredNode.id && l.source === n.id)
-                    );
-                    alpha = connected ? 1 : 0.15;
-                }
-                ctx.globalAlpha = alpha;
-
-                if (hoveredNode === n) {
-                    ctx.shadowColor = n.color;
-                    ctx.shadowBlur = 16;
-                }
-
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.fillStyle = n.color + (alpha < 1 ? '40' : 'cc');
-                ctx.fill();
-                ctx.strokeStyle = n.color;
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                ctx.shadowColor = 'transparent';
-                ctx.shadowBlur = 0;
-
-                // Draw image thumbnail inside node if available
-                if (n._imgLoaded && n._img) {
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(x, y, r - 1, 0, Math.PI * 2);
-                    ctx.clip();
-                    const imgSize = r * 2;
-                    ctx.drawImage(n._img, x - r, y - r, imgSize, imgSize);
-                    ctx.restore();
-                    // Redraw border on top of image
-                    ctx.beginPath();
-                    ctx.arc(x, y, r, 0, Math.PI * 2);
-                    ctx.strokeStyle = n.color;
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                }
-
-                if (sc > 0.4 || hoveredNode === n) {
-                    ctx.font = Math.max(9, 11 * Math.min(sc, 1.5)) + 'px Lora, serif';
-                    ctx.fillStyle = alpha < 1 ? 'rgba(224,219,209,0.2)' : '#e0dbd1';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(n.id.length > 18 ? n.id.slice(0, 17) + '\u2026' : n.id, x, y + r + 14);
-                }
-            }
-            ctx.globalAlpha = 1;
+            d3.selectAll('.node-g').classed('dim', function(n) { return !conn.has(n.id); });
+            d3.selectAll('.link').classed('dim', function(l) { return sid(l) !== d.id && tid(l) !== d.id; });
+            d3.selectAll('.link').classed('hl', function(l) { return sid(l) === d.id || tid(l) === d.id; });
 
             // Tooltip
-            if (hoveredNode) {
-                const x = hoveredNode.x * sc + tx;
-                const y = hoveredNode.y * sc + ty - hoveredNode.radius * Math.min(sc, 2) - 12;
-                const text = hoveredNode.id + ' \u2014 ' + hoveredNode.type + ' \u00b7 ' + hoveredNode.obsCount + ' obs \u00b7 ' + hoveredNode.degree + ' conn';
-                ctx.font = '11px Lora, serif';
-                const tw = ctx.measureText(text).width + 16;
-                const th = 24;
-                ctx.fillStyle = 'rgba(28,38,31,0.92)';
-                ctx.strokeStyle = 'rgba(196,133,76,0.4)';
-                ctx.lineWidth = 1;
-                roundRect(ctx, x - tw / 2, y - th, tw, th, 6);
-                ctx.fillStyle = '#e0dbd1';
-                ctx.textAlign = 'center';
-                ctx.fillText(text, x, y - 7);
-            }
-        }
+            tip.innerHTML = '<strong>' + esc(d.id) + '</strong><br><span class="sub">' + d.type.replace(/_/g, ' ') + ' &middot; ' + d.obsCount + ' obs &middot; ' + d.degree + ' conn</span>';
+            tip.style.display = 'block';
+            tip.style.left = (ev.clientX + 14) + 'px';
+            tip.style.top = (ev.clientY - 10) + 'px';
+        });
 
-        drawFrameFn = drawFrame;
-        drawFrame();
+        nodeG.on('mousemove', function(ev) {
+            tip.style.left = (ev.clientX + 14) + 'px';
+            tip.style.top = (ev.clientY - 10) + 'px';
+        });
 
-        // Mouse
-        canvas.onmousemove = function(e) {
-            var crect = canvas.getBoundingClientRect();
-            var mx = e.clientX - crect.left, my = e.clientY - crect.top;
-            if (dragNode) {
-                dragNode.x = (mx - gT.x) / gT.scale;
-                dragNode.y = (my - gT.y) / gT.scale;
-                drawFrame(); return;
-            }
-            if (isPanning) {
-                gT.x += mx - panStart.x;
-                gT.y += my - panStart.y;
-                panStart.x = mx; panStart.y = my;
-                drawFrame(); return;
-            }
-            var found = null;
-            for (var ni = 0; ni < graphNodes.length; ni++) {
-                var n = graphNodes[ni];
-                var nx = n.x * sc + tx, ny = n.y * sc + ty;
-                var r = n.radius * Math.min(sc, 2) + 4;
-                if (Math.hypot(mx - nx, my - ny) < r) { found = n; break; }
-            }
-            if (found !== hoveredNode) {
-                hoveredNode = found;
-                canvas.style.cursor = found ? 'pointer' : 'grab';
-                drawFrame();
-            }
-        };
-        canvas.onmousedown = function(e) {
-            var crect = canvas.getBoundingClientRect();
-            var mx = e.clientX - crect.left, my = e.clientY - crect.top;
-            if (hoveredNode) { dragNode = hoveredNode; return; }
-            isPanning = true;
-            panStart = { x: mx, y: my };
-            canvas.style.cursor = 'grabbing';
-        };
-        canvas.onmouseup = function() {
-            if (dragNode) {
-                animateSettle();
-            }
-            dragNode = null; isPanning = false;
-            canvas.style.cursor = hoveredNode ? 'pointer' : 'grab';
-        };
-        canvas.onmouseleave = function() {
-            dragNode = null; isPanning = false; hoveredNode = null;
-            drawFrame();
-        };
-        canvas.onwheel = function(e) {
-            e.preventDefault();
-            var crect = canvas.getBoundingClientRect();
-            var mx = e.clientX - crect.left, my = e.clientY - crect.top;
-            var factor = e.deltaY < 0 ? 1.12 : 0.89;
-            var newScale = gT.scale * factor;
-            if (newScale < 0.15 || newScale > 8) return;
-            gT.x = mx - (mx - gT.x) * factor;
-            gT.y = my - (my - gT.y) * factor;
-            gT.scale = newScale;
-            drawFrame();
-        };
-    }
+        nodeG.on('mouseout', function() {
+            d3.selectAll('.node-g').classed('dim', false);
+            d3.selectAll('.link').classed('dim', false).classed('hl', false);
+            tip.style.display = 'none';
+        });
 
-    function roundRect(ctx, x, y, w, h, r) {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+        // Click → go to explorer with that node selected (opens new page)
+        nodeG.on('click', function(ev, d) {
+            window.location.href = '/explorer';
+        });
+
+        // ── D3 Force Simulation ──
+        graphSim = d3.forceSimulation(graphNodes)
+            .force('link', d3.forceLink(graphLinks).id(function(d) { return d.id; }).distance(100))
+            .force('charge', d3.forceManyBody().strength(-300))
+            .force('center', d3.forceCenter(w / 2, h / 2))
+            .force('collide', d3.forceCollide().radius(function(d) {
+                return (d.type === 'Image' && d.thumbnail_url) ? imgSize + 6 : rad(d) + 6;
+            }));
+
+        graphSim.on('tick', function() {
+            link.attr('x1', function(d) { return d.source.x; })
+                .attr('y1', function(d) { return d.source.y; })
+                .attr('x2', function(d) { return d.target.x; })
+                .attr('y2', function(d) { return d.target.y; });
+            nodeG.attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+        });
     }
 
     // =============================================
@@ -1294,8 +1184,8 @@
     window.addEventListener('resize', function() {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(function() {
-            gT = { x: 0, y: 0, scale: 1 };
-            renderGraph();
+            if (graphSim) graphSim.stop();
+            renderGraphD3();
         }, 200);
     });
 
