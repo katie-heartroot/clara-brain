@@ -822,6 +822,22 @@
         "URL mapping: approximate (pending vision API re-analysis to confirm)"
       ],
       "created": "2026-02-15T08:00:00.000000"
+    },
+    "Charlie": {
+      "name": "Charlie",
+      "entity_type": "Human",
+      "observations": [
+        "Katie's child"
+      ],
+      "created": "2026-02-15T12:00:00.000000"
+    },
+    "Aris": {
+      "name": "Aris",
+      "entity_type": "Human",
+      "observations": [
+        "Katie's child"
+      ],
+      "created": "2026-02-15T12:00:00.000000"
     }
   },
   "relations": [
@@ -1656,6 +1672,18 @@
       "to_entity": "Life-Planning-System",
       "relation_type": "designed",
       "created": "2026-02-15T00:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "to_entity": "Charlie",
+      "relation_type": "parent_of",
+      "created": "2026-02-15T12:00:00.000000"
+    },
+    {
+      "from_entity": "Katie-Tudor",
+      "to_entity": "Aris",
+      "relation_type": "parent_of",
+      "created": "2026-02-15T12:00:00.000000"
     }
   ],
   "last_sync": "2026-02-15T08:00:00.000000"
