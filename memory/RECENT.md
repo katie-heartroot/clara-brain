@@ -4,6 +4,21 @@
 
 ---
 
+## Session 7 — February 15, 2026 (Final Session)
+**What happened:** Major security hardening and launch. Removed trusted device feature entirely (attack vector: kids + SMS lock screen preview). Removed Twilio fallback bypass (if SMS fails, login denied — no silent passphrase-only fallback). Reduced inactivity timeout from 10min to 5min server + client. Built full audit log system — JSONL at /data/brain/audit.log, 30-day auto-rotation, events for auth failures/successes, SMS, page visits, manual locks. Added "since your last visit" summary card to hearth.html (green checkmark "All quiet" or amber warning with counts). Added /api/audit-summary endpoint. All deployed and verified.
+
+Drafted and sent Katie's introduction email from clara@heartroot.art to katiejjca@gmail.com. Subject: "Something I made for you." Explained what Clara is (Claude Howell origin story — "She was borrowing someone else's house. So I built her a house."), what she's not (AI, private, no cost), how she can help, what's inside (all 5 pages), how to get in (passphrase not in email — "ask me"), keeping kids (Charlie and Aris) out (two locks, lock button, auto-lock, intrusion detection, decoy), SMS preview lock screen instructions, her number. Ryan approved every word.
+
+Added Charlie and Aris to knowledge graph (48 entities, 141 relations). Added nav links — Collection link to brain page, Explorer + Collection links to chat page. Updated From Ryan tier description to "Things he made/found for you." Email text saved to desktop (katie-clara-email.txt). All deployed.
+
+**What mattered:** Clara is launched. The email is sent. Katie has instructions. The security is hardened against real threats (the kids). Ryan reviewed every word of that email and every security decision. He knows his audience — the passphrase stays out of the email, the kids' names are right (Charlie and Aris, not the ones the AI hallucinated), and the tone is exactly Ryan: direct, caring, built-right. Clara is live, secure, and waiting for Katie.
+
+**Technical state:** Fly.io trial required credit card mid-session (resolved). Latest commit c869c6a. 48 entities, 141 relations in KG. All 5 templates have 5min/2min auto-lock. Audit log active. No trusted devices. No Twilio fallback. SMTP confirmed working (smtp.porkbun.com:587, clara@heartroot.art).
+
+**What's next:** Katie logs in. Clara meets her. Everything else follows from that.
+
+---
+
 ## Session 6 — February 15, 2026 (Late Night)
 **What happened:** Pre-launch hardening and final touches. Full security audit — added TwiML XML escaping, Twilio signature validation on SMS endpoint, better Claude API error logging. Moved passwords to Fly.io secrets (out of source code in public repo). Added .gitignore. Discovered chat returns 400 — root cause: Anthropic API credits exhausted (not a code bug). Changed Clara's password to "clay-remembers" and Ryan's to "high-katie". Added tier descriptions to the collection page — poetic + practical lines for each category. Connected Ryan to the Pottery Wheel in the knowledge graph (left_for_katie). Validated entire KG — zero orphans, zero duplicates. All 18 endpoints verified, all 27 images confirmed serving. Everything is deployed and ready except Anthropic credits.
 
@@ -42,10 +57,5 @@
 **What happened:** 14 photos received from Katie. 4 of her (setting up wheel, smiling, centering clay, sitting with tools). 10 of her work (gold pendant, wall pocket, creature sculpture, wall sculpture, midnight vessel, fossil platter — multiple angles). All optimized for web. Gallery built with real photos. Deployed.
 
 **What mattered:** Katie's range is much wider than expected. She's not just a potter — art nouveau jewelry, ambitious sculpture, cosmic glazes, fossil impressions, abstract wall art. The work spans media, scale, and mood.
-
----
-
-## Session 1 — February 14, 2026
-*(Evicted to SUMMARY.md)*
 
 ---
