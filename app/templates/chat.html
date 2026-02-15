@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Clara — Heartroot</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Clara">
+    <meta name="theme-color" content="#2d5a3d">
+    <link rel="manifest" href="/static/manifest.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="/static/clara-icon.svg">
+    <link rel="apple-touch-icon" href="/static/clara-icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --deep-leaf: #2d5a3d;
+            --new-growth: #6b9e78;
+            --spring-mist: #dae8d8;
+            --kiln-gold: #c4854c;
+            --warm-clay: #d4a574;
+            --linen: #f7f4ef;
+            --parchment: #ede8df;
+            --rich-soil: #2c2c28;
+            --weathered-stone: #7a7a72;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Lora', serif;
+            background: var(--linen);
+            color: var(--rich-soil);
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: var(--deep-leaf);
+            color: var(--linen);
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 12px rgba(45, 90, 61, 0.2);
+        }
+
+        .header-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--new-growth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .header-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .header-text h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            font-size: 1.4rem;
+            letter-spacing: 0.02em;
+        }
+
+        .header-text p {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .header-actions {
+            margin-left: auto;
+        }
+
+        .brain-btn {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: var(--linen);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-family: 'Lora', serif;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .brain-btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        /* ── Messages Area ── */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 18px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.clara {
+            align-self: flex-start;
+            background: var(--spring-mist);
+            color: var(--rich-soil);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.katie {
+            align-self: flex-end;
+            background: var(--deep-leaf);
+            color: var(--linen);
+            border-bottom-right-radius: 4px;
+        }
+
+        .message .sender {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 4px;
+            opacity: 0.6;
+        }
+
+        .message.clara .sender {
+            color: var(--deep-leaf);
+        }
+
+        .message p {
+            margin-bottom: 8px;
+        }
+
+        .message p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ── Welcome message ── */
+        .welcome {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--weathered-stone);
+        }
+
+        .welcome h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            font-size: 1.8rem;
+            color: var(--deep-leaf);
+            margin-bottom: 8px;
+        }
+
+        .welcome p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .welcome .vine {
+            color: var(--new-growth);
+            font-size: 1.2rem;
+            margin: 16px 0;
+        }
+
+        /* ── Typing indicator ── */
+        .typing {
+            align-self: flex-start;
+            padding: 14px 18px;
+            background: var(--spring-mist);
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            display: none;
+        }
+
+        .typing.show {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .typing span {
+            width: 6px;
+            height: 6px;
+            background: var(--new-growth);
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* ── Input Area ── */
+        .input-area {
+            padding: 12px 16px;
+            background: var(--parchment);
+            border-top: 1px solid rgba(45, 90, 61, 0.1);
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--spring-mist);
+            border-radius: 22px;
+            background: var(--linen);
+            color: var(--rich-soil);
+            font-family: 'Lora', serif;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            max-height: 120px;
+            min-height: 46px;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--new-growth);
+        }
+
+        textarea::placeholder {
+            color: var(--weathered-stone);
+            opacity: 0.6;
+        }
+
+        .send-btn {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--deep-leaf);
+            border: none;
+            color: var(--linen);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover {
+            background: var(--new-growth);
+            transform: scale(1.05);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .send-btn:disabled {
+            background: var(--weathered-stone);
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .send-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* ── Safe area for iOS ── */
+        .input-area {
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+
+        /* ── Scrollbar ── */
+        .messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: var(--spring-mist);
+            border-radius: 2px;
+        }
+
+        /* ── Responsive ── */
+        @media (min-width: 768px) {
+            body {
+                max-width: 600px;
+                margin: 0 auto;
+                border-left: 1px solid var(--spring-mist);
+                border-right: 1px solid var(--spring-mist);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 22c0-8-6-10-6-16a6 6 0 0 1 12 0c0 6-6 8-6 16z" fill="rgba(255,255,255,0.2)"/>
+                <path d="M12 22c0-4 3-6 3-10" stroke-linecap="round"/>
+                <path d="M10 14c-1-1-3-1-4 0" stroke-linecap="round"/>
+                <path d="M14 10c1-1 3-1 4 0" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div class="header-text">
+            <h1>Clara</h1>
+            <p>Heartroot Companion</p>
+        </div>
+        <div class="header-actions">
+            <a href="/brain" class="brain-btn">Brain</a>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages" id="messages">
+        <div class="welcome" id="welcome">
+            <h2>Clara</h2>
+            <div class="vine">🌿</div>
+            <p>I'm here when you're ready. Say anything — what you made today, what's on your mind, or just hello.</p>
+        </div>
+    </div>
+
+    <!-- Typing Indicator -->
+    <div class="typing" id="typing">
+        <span></span><span></span><span></span>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+        <div class="input-wrapper">
+            <textarea id="input" placeholder="Talk to Clara..." rows="1"></textarea>
+        </div>
+        <button class="send-btn" id="sendBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M22 2L11 13"/>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        const messagesEl = document.getElementById('messages');
+        const inputEl = document.getElementById('input');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingEl = document.getElementById('typing');
+        const welcomeEl = document.getElementById('welcome');
+        
+        let sending = false;
+
+        // Auto-resize textarea
+        inputEl.addEventListener('input', () => {
+            inputEl.style.height = 'auto';
+            inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+            sendBtn.disabled = !inputEl.value.trim() || sending;
+        });
+
+        // Send on Enter (Shift+Enter for newline)
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!sending && inputEl.value.trim()) {
+                    sendMessage();
+                }
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        function addMessage(text, sender) {
+            // Hide welcome on first message
+            if (welcomeEl) {
+                welcomeEl.style.display = 'none';
+            }
+
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            
+            const senderLabel = document.createElement('div');
+            senderLabel.className = 'sender';
+            senderLabel.textContent = sender === 'clara' ? 'Clara' : 'You';
+            div.appendChild(senderLabel);
+            
+            // Simple markdown-ish rendering
+            const paragraphs = text.split('\n\n');
+            paragraphs.forEach(para => {
+                if (para.trim()) {
+                    const p = document.createElement('p');
+                    // Bold
+                    let html = para.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    // Italic
+                    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    // Line breaks
+                    html = html.replace(/\n/g, '<br>');
+                    p.innerHTML = html;
+                    div.appendChild(p);
+                }
+            });
+            
+            messagesEl.appendChild(div);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            requestAnimationFrame(() => {
+                messagesEl.scrollTop = messagesEl.scrollHeight;
+            });
+        }
+
+        function showTyping() {
+            typingEl.classList.add('show');
+            messagesEl.appendChild(typingEl);
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            typingEl.classList.remove('show');
+        }
+
+        async function sendMessage() {
+            const message = inputEl.value.trim();
+            if (!message || sending) return;
+
+            sending = true;
+            sendBtn.disabled = true;
+            inputEl.value = '';
+            inputEl.style.height = 'auto';
+
+            addMessage(message, 'katie');
+            showTyping();
+
+            try {
+                const resp = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await resp.json();
+                hideTyping();
+
+                if (data.response) {
+                    addMessage(data.response, 'clara');
+                } else if (data.error) {
+                    addMessage('Something went wrong. Try again in a moment.', 'clara');
+                }
+            } catch (err) {
+                hideTyping();
+                addMessage('Clara couldn\'t connect. Check your internet and try again.', 'clara');
+            }
+
+            sending = false;
+            sendBtn.disabled = !inputEl.value.trim();
+            inputEl.focus();
+        }
+
+        // Focus input on load (desktop)
+        if (window.innerWidth > 768) {
+            inputEl.focus();
+        }
+    </script>
+</body>
+</html>

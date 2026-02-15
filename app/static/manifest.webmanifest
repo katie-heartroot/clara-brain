@@ -1,0 +1,21 @@
+{
+    "name": "Clara — Heartroot Companion",
+    "short_name": "Clara",
+    "description": "Katie's AI companion. Remembers, doesn't judge, holds the thread.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f7f4ef",
+    "theme_color": "#2d5a3d",
+    "icons": [
+        {
+            "src": "/static/clara-icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "/static/clara-icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ]
+}

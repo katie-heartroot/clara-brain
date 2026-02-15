@@ -1,0 +1,21 @@
+app = "clara-brain"
+primary_region = "ord"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 7778
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[mounts]
+  source = "clara_data"
+  destination = "/data"
+
+[env]
+  PORT = "7778"
+  HOST = "0.0.0.0"
+  CLARA_BRAIN_ROOT = "/data/brain"
