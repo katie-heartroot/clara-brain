@@ -695,8 +695,8 @@
             }));
 
             const nodeSet = new Set(graphNodes.map(n => n.id));
-            graphLinks = relations.filter(r => nodeSet.has(r.from) && nodeSet.has(r.to)).map(r => ({
-                source: r.from, target: r.to, type: r.relation_type || '',
+            graphLinks = relations.filter(r => nodeSet.has(r.from_entity || r.from) && nodeSet.has(r.to_entity || r.to)).map(r => ({
+                source: r.from_entity || r.from, target: r.to_entity || r.to, type: r.relation_type || '',
             }));
 
             const deg = {};
