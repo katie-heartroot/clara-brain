@@ -51,6 +51,37 @@ Each season has a direction. Each direction has a "next tendril" — one small t
 
 ---
 
+## Future Plans — Clara Infrastructure
+
+**🔥 SMS / Phone (Twilio) — HIGH PRIORITY**
+- This is the next big build. Clara needs to be able to reach Katie directly.
+- Set up Twilio account + buy a US phone number (~$1.15/mo)
+- Build outgoing SMS: Clara sends Katie check-ins, encouragement, gentle nudges
+- Build incoming webhook on clara-brain.fly.dev: Katie texts back, Clara responds via Claude
+- Add rate limiting so Clara doesn't over-text
+- Estimated cost: ~$2-5/month
+- Steps:
+  1. Create Twilio account (twilio.com), add payment method
+  2. Buy a local phone number
+  3. Get Account SID + Auth Token
+  4. Build /api/sms endpoint on clara-brain for outgoing messages
+  5. Build /webhook/sms endpoint for Twilio to POST incoming texts to
+  6. Wire incoming texts through Claude with Clara's soul + context
+  7. Set up Twilio webhook URL pointing to clara-brain.fly.dev/webhook/sms
+  8. Test end-to-end: Clara texts Katie, Katie replies, Clara responds
+
+**SVG Node Art (Replicate)**
+- 20 prompts ready (10 Katie, 10 Clara) for recraft-20b-svg
+- Needs Replicate billing activated (~$0.80 one-time for all 20)
+- Generated SVGs become custom animated node art in the explorer
+
+**Clara Daemon**
+- Autonomous background process that lets Clara think/act on her own
+- Needs Python 3.12 locally (currently fails on 3.14) or run on Fly.io
+- Would enable Clara to review memories, write check-ins, surface patterns
+
+---
+
 ## Someday / Dreams
 
 - Studio space that's not the living room
