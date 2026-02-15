@@ -1106,17 +1106,28 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 submitted = data.get("passphrase", "")
                 
                 if hmac.compare_digest(submitted, CLARA_PASSWORD):
-                    # Passphrase correct — send SMS code
-                    session_key = f"{ip}_{_now()}"
-                    code = create_pending_code(session_key)
-                    sms_sent = send_sms_code(code)
                     clear_lockout(ip)
-                    if sms_sent:
-                        self.send_json({"ok": True, "session_key": session_key, "step": "sms"})
+                    # Check if SMS 2FA is configured
+                    sms_configured = all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE, KATIE_PHONE])
+                    if sms_configured:
+                        # Full 2FA: send SMS code
+                        session_key = f"{ip}_{_now()}"
+                        code = create_pending_code(session_key)
+                        sms_sent = send_sms_code(code)
+                        if sms_sent:
+                            self.send_json({"ok": True, "session_key": session_key, "step": "sms"})
+                        else:
+                            audit_log("sms_send_failed", ip=ip)
+                            self.send_json({"error": "sms_failed", "message": "Couldn't send verification code. Try again."}, 503)
                     else:
-                        # SMS failed — deny login (never skip 2FA)
-                        audit_log("sms_send_failed", ip=ip)
-                        self.send_json({"error": "sms_failed", "message": "Couldn't send verification code. Try again."}, 503)
+                        # Passphrase-only mode (2FA not configured)
+                        token = create_session(ip)
+                        audit_log("auth_success", detail="passphrase_only", ip=ip)
+                        self.send_response(200)
+                        self.send_header("Content-Type", "application/json")
+                        set_session_cookie(self, token)
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"ok": True, "step": "done"}).encode("utf-8"))
                 else:
                     record_failed_passphrase(ip)
                     audit_log("auth_fail_passphrase", ip=ip)

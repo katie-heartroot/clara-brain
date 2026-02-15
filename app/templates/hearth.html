@@ -407,6 +407,11 @@
                     showStep(lockedState);
                     return;
                 }
+                if (data.ok && data.step === 'done') {
+                    // Passphrase-only mode — go straight in
+                    window.location.href = '/';
+                    return;
+                }
                 if (data.ok && data.step === 'sms') {
                     sessionKey = data.session_key;
                     showStep(stepSms);
