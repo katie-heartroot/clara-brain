@@ -1189,6 +1189,15 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 sms_body = params.get("Body", [""])[0].strip()
                 sms_from = params.get("From", [""])[0]
                 
+                # ── Phone whitelist: only Katie can text Clara ──
+                if KATIE_PHONE and sms_from != KATIE_PHONE:
+                    print(f"SMS rejected: unknown sender {sms_from}")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/xml")
+                    self.end_headers()
+                    self.wfile.write(b"<Response></Response>")
+                    return
+                
                 if not sms_body:
                     self.send_response(200)
                     self.send_header("Content-Type", "text/xml")
