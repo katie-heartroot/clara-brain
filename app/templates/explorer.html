@@ -527,9 +527,8 @@
             <div class="control-row">
                 <label>Node style</label>
                 <select onchange="setNodeStyle(this.value)">
-                    <option value="flat" selected>Flat</option>
+                    <option value="glass" selected>Glass</option>
                     <option value="lit">Lit</option>
-                    <option value="glass">Glass</option>
                 </select>
             </div>
             <div class="control-row">
@@ -558,7 +557,7 @@
     var edgeOpacity = 0.25;
     var edgeWidth = 2;
     var curveStyle = 'straight';
-    var nodeStyle = 'flat';
+    var nodeStyle = 'glass';
     var fanHover = false;
     var hintTimer;
 
@@ -896,16 +895,11 @@
             .attr('class', 'node-circle')
             .attr('r', function(d) { return rad(d); })
             .attr('fill', function(d) {
-                if (nodeStyle === 'glass') return 'url(#grad-' + d.type + ')';
-                return d.color + 'cc';
+                return 'url(#grad-' + d.type + ')';
             })
             .attr('stroke', function(d) { return d.color; })
             .attr('stroke-width', 1.5)
-            .attr('filter', function() {
-                if (nodeStyle === 'glass') return 'url(#glass)';
-                if (nodeStyle === 'lit') return 'url(#glow)';
-                return null;
-            });
+            .attr('filter', 'url(#glass)');
 
         // Image thumbnails inside Image nodes
         nodeG.each(function(d) {
