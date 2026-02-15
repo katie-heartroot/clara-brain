@@ -101,10 +101,22 @@
             transition: all 0.2s;
         }
 
-        .hero-nav a:hover {
+        .hero-nav a:hover, .hero-nav button:hover {
             color: var(--linen);
             border-color: var(--accent);
             background: rgba(196,133,76,0.1);
+        }
+
+        .hero-nav button {
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            font-family: 'Lora', serif;
+            transition: all 0.2s;
         }
 
         /* ── Stats Bar ── */
@@ -542,6 +554,7 @@
             <a href="/">Chat</a>
             <a href="/explorer">Explorer</a>
             <a href="/collection">Collection</a>
+            <button onclick="claraLock()" title="Lock">&#x1f512;</button>
         </div>
     </div>
 
@@ -738,7 +751,10 @@
             var entities = kg.entities || {};
             var relations = kg.relations || [];
 
-            graphNodes = Object.entries(entities).map(function(pair) {
+            graphNodes = Object.entries(entities).filter(function(pair) {
+                // Skip detail-view images (e.g. -det suffix) to avoid visual duplicates
+                return !(pair[1].entity_type === 'Image' && pair[0].match(/-det$/));
+            }).map(function(pair) {
                 var name = pair[0], data = pair[1];
                 var obs = data.observations || [];
                 var imgUrl = data.thumbnail_url || data.image_url || null;
@@ -1193,11 +1209,6 @@
     </script>
 
     <!-- ── Session Security ── -->
-    <style>
-    .quick-lock{position:fixed;top:12px;right:12px;z-index:9999;width:36px;height:36px;border-radius:50%;background:rgba(44,44,40,0.7);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .3s;backdrop-filter:blur(4px)}
-    .quick-lock:hover{background:rgba(163,74,40,0.8);color:#fff;border-color:rgba(196,133,76,0.5)}
-    </style>
-    <button class="quick-lock" onclick="claraLock()" title="Lock">&#x1f512;</button>
     <script>
     (function(){
         const HEARTBEAT_MS = 120000;

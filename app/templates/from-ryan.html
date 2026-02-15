@@ -373,6 +373,22 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Nav Bar ── */
+.nav-bar {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 8px; padding: 10px 16px;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+}
+.nav-bar a, .nav-bar button {
+  color: var(--text-dim); text-decoration: none; font-size: 0.75rem;
+  padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border);
+  background: transparent; cursor: pointer; font-family: 'Lora', serif;
+  transition: all 0.2s;
+}
+.nav-bar a:hover, .nav-bar button:hover {
+  color: var(--linen); border-color: var(--accent); background: rgba(196,133,76,0.1);
+}
+
 /* ── Mobile ── */
 @media (max-width: 480px) {
   .header h1 { font-size: 1.5rem; }
@@ -392,6 +408,13 @@ body {
 
 <!-- Main Page -->
 <div id="main">
+  <div class="nav-bar">
+    <a href="/">Chat</a>
+    <a href="/brain">Brain</a>
+    <a href="/explorer">Explorer</a>
+    <a href="/collection">Collection</a>
+    <button onclick="claraLock()" title="Lock">&#x1f512;</button>
+  </div>
   <div class="header">
     <h1>From Ryan</h1>
     <div class="sub">Leave something for Katie to find</div>
@@ -646,11 +669,6 @@ document.addEventListener('keydown', e => {
 </script>
 
     <!-- ── Session Security ── -->
-    <style>
-    .quick-lock{position:fixed;top:12px;right:12px;z-index:9999;width:36px;height:36px;border-radius:50%;background:rgba(44,44,40,0.7);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .3s;backdrop-filter:blur(4px)}
-    .quick-lock:hover{background:rgba(163,74,40,0.8);color:#fff;border-color:rgba(196,133,76,0.5)}
-    </style>
-    <button class="quick-lock" onclick="claraLock()" title="Lock">&#x1f512;</button>
     <script>
     (function(){
         const HEARTBEAT_MS = 120000;

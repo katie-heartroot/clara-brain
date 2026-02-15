@@ -489,6 +489,8 @@
         <div class="right">
             <a href="/brain">Brain</a>
             <a href="/">Chat</a>
+            <a href="/collection">Collection</a>
+            <button onclick="claraLock()" title="Lock">&#x1f512;</button>
         </div>
     </header>
 
@@ -631,7 +633,10 @@
         var entities = kg.entities || {};
         var relations = kg.relations || [];
 
-        allNodes = Object.entries(entities).map(function(pair) {
+        allNodes = Object.entries(entities).filter(function(pair) {
+            // Skip detail-view images (e.g. -det suffix) to avoid visual duplicates
+            return !(pair[1].entity_type === 'Image' && pair[0].match(/-det$/));
+        }).map(function(pair) {
             var name = pair[0], data = pair[1];
             var obs = data.observations || [];
             // Extract URL from observations for Image entities
@@ -1540,11 +1545,6 @@
     </script>
 
     <!-- ── Session Security ── -->
-    <style>
-    .quick-lock{position:fixed;top:12px;right:12px;z-index:9999;width:36px;height:36px;border-radius:50%;background:rgba(44,44,40,0.7);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .3s;backdrop-filter:blur(4px)}
-    .quick-lock:hover{background:rgba(163,74,40,0.8);color:#fff;border-color:rgba(196,133,76,0.5)}
-    </style>
-    <button class="quick-lock" onclick="claraLock()" title="Lock">&#x1f512;</button>
     <script>
     (function(){
         const HEARTBEAT_MS = 120000;
