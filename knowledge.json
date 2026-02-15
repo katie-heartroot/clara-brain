@@ -1622,6 +1622,16 @@
       "to_entity": "Pottery-Wheel",
       "relation_type": "left_for_katie",
       "created": "2026-02-15T10:58:55.980418"
+    },
+    {
+      "from_entity": "Clara",
+      "to_entity": "White-Lake",
+      "relation_type": "created_at"
+    },
+    {
+      "from_entity": "Ryan",
+      "to_entity": "White-Lake",
+      "relation_type": "works_from"
     }
   ],
   "last_sync": "2026-02-15T08:00:00.000000"

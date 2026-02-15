@@ -6,6 +6,7 @@ WORKDIR /app
 COPY CLARA-SOUL.md CONTEXT.md GOALS.md WINS.md NEXT.md MEMORY.md BOOTSTRAP.md README.md ./brain/
 COPY knowledge.json ./brain/
 COPY memory/ ./brain/memory/
+COPY images-seed.json ./brain/images-seed.json
 
 # Copy app
 COPY app/ ./app/
