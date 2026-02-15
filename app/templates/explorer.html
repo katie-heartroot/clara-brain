@@ -628,6 +628,10 @@
                     }
                 }
             }
+            // Rewrite heartroot.art → github.io until SSL cert is provisioned
+            if (imgUrl && imgUrl.indexOf('https://heartroot.art/') === 0) {
+                imgUrl = imgUrl.replace('https://heartroot.art/', 'https://katie-heartroot.github.io/heartroot-art/');
+            }
             return {
                 id: name,
                 type: data.entity_type || 'Unknown',
@@ -1081,6 +1085,10 @@
                         break;
                     }
                 }
+            }
+            // Rewrite heartroot.art → github.io until SSL cert is provisioned
+            if (imgUrl && imgUrl.indexOf('https://heartroot.art/') === 0) {
+                imgUrl = imgUrl.replace('https://heartroot.art/', 'https://katie-heartroot.github.io/heartroot-art/');
             }
             if (imgUrl) {
                 h += '<div class="panel-image">';
