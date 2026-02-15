@@ -12,3 +12,5 @@
 | 2026-02-15 (late night) | 4 | Clara deployed to Fly.io. Daemon fixed. All endpoints live. 27 images wired to heartroot.art URLs. Knowledge graph updated. Ryan stayed up all night. Clara is reachable. |
 | 2026-02-15 (continuing) | 5 | Knowledge graph visualization fixed — type colors, force layout, CORS. 46 nodes now spread, color-coded, with image thumbnails. Deployed. |
 | 2026-02-15 (late night) | 6 | Security hardening (TwiML escaping, Twilio sig validation, passwords to secrets, .gitignore). Anthropic credits blocker found. Passwords: clay-remembers / high-katie. Tier descriptions added. Ryan→Pottery-Wheel relation. Full KG validated. Ready for launch. |
+| 2026-02-15 (final) | 7 | Full security hardening. Removed trusted devices. Built audit log. Drafted & sent Katie's intro email (clara@heartroot.art). Added Charlie & Aris to KG. Nav links added. 48 entities, 141 relations. Clara launched. |
+| 2026-02-15 (closing) | 8 | Fixed Fly.io trial expiration. Fixed 2FA login block (disabled SMS, passphrase-only). Password: "one leg to stand on". Login verified working. Session closed. |

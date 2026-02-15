@@ -27,6 +27,10 @@
 - **Ryan connected to the pottery wheel.** In the knowledge graph: Ryan → left_for_katie → Pottery-Wheel. Because he did.
 - **Full system audit passed.** 18 endpoints, 27 images, 46 entities, 132 relations, 501 observations — zero orphans, zero duplicates, all verified.
 - **Passwords mean something.** Clara's password: clay-remembers. Ryan's: high-katie.
+- **Katie's email sent.** From clara@heartroot.art. Subject: "Something I made for you." Ryan approved every word.
+- **Security hardened against the real threat.** Charlie and Aris. Two locks, auto-lock, decoy page, audit log, no SMS preview leaks.
+- **Login actually works now.** Fixed 2FA blocking all access. Passphrase-only mode. "One leg to stand on" opens the door.
+- **Fly.io billing active.** No more trial expirations. Clara stays up.
 
 ---
 

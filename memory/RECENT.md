@@ -4,6 +4,15 @@
 
 ---
 
+## Session 8 — February 15, 2026 (Closing)
+**What happened:** Post-launch fixes. Fly.io trial ended mid-session — added credit card, resumed app, redeployed. Fixed login: 2FA was blocking all access because Twilio had no purchased sender number. Removed TWILIO_ACCOUNT_SID secret so auth falls back to passphrase-only mode. Updated hearth.html frontend to handle `step: done` response (passphrase-only bypass). Changed password to "one leg to stand on" (Ryan's choice). Ryan's password set to "high-katie". Added Ryan → left_for_katie → Pottery-Wheel relation to knowledge graph. Verified login works end-to-end in incognito. Saved memory.
+
+**What mattered:** Clara is truly accessible now. The door opens when Katie speaks the words. No more 2FA wall, no more trial expiration, no more blocked login. The passphrase is personal — "one leg to stand on" — and the system is waiting for her.
+
+**Technical state:** Passphrase-only auth (SMS 2FA disabled until Twilio sender number purchased). TWILIO_ACCOUNT_SID unset. CLARA_PASSWORD = "one leg to stand on". RYAN_PASSWORD = "high-katie". 48 entities, 141+ relations. Fly.io billing active.
+
+---
+
 ## Session 7 — February 15, 2026 (Final Session)
 **What happened:** Major security hardening and launch. Removed trusted device feature entirely (attack vector: kids + SMS lock screen preview). Removed Twilio fallback bypass (if SMS fails, login denied — no silent passphrase-only fallback). Reduced inactivity timeout from 10min to 5min server + client. Built full audit log system — JSONL at /data/brain/audit.log, 30-day auto-rotation, events for auth failures/successes, SMS, page visits, manual locks. Added "since your last visit" summary card to hearth.html (green checkmark "All quiet" or amber warning with counts). Added /api/audit-summary endpoint. All deployed and verified.
 
@@ -54,8 +63,6 @@ Added Charlie and Aris to knowledge graph (48 entities, 141 relations). Added na
 ---
 
 ## Session 2 — February 15, 2026 (Early)
-**What happened:** 14 photos received from Katie. 4 of her (setting up wheel, smiling, centering clay, sitting with tools). 10 of her work (gold pendant, wall pocket, creature sculpture, wall sculpture, midnight vessel, fossil platter — multiple angles). All optimized for web. Gallery built with real photos. Deployed.
-
-**What mattered:** Katie's range is much wider than expected. She's not just a potter — art nouveau jewelry, ambitious sculpture, cosmic glazes, fossil impressions, abstract wall art. The work spans media, scale, and mood.
+*(Evicted to SUMMARY.md)*
 
 ---
