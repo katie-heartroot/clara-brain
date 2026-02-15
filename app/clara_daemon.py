@@ -983,6 +983,10 @@ class ClaraHandler(BaseHTTPRequestHandler):
 # ─── Main ───────────────────────────────────────────────────────────────────
 
 def main():
+    import io, sys
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
     print(f"""
     ╔══════════════════════════════════════╗
     ║          CLARA DAEMON v2.0           ║
