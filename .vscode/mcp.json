@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "clara-brain": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["bridge/clara_mcp.py"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}

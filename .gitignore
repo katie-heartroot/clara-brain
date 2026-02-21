@@ -5,3 +5,7 @@ __pycache__/
 sessions/
 images/
 thumbs/
+bridge/sessions.json
+bridge/test_mcp.py
+knowledge.json.bak
+knowledge.json.tmp

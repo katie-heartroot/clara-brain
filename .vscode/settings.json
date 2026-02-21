@@ -1,0 +1,8 @@
+{
+  "chat.instructionFilesLocations": [
+    ".vscode"
+  ],
+  "github.copilot.chat.codeGeneration.instructions": [
+    { "file": ".vscode/instructions.md" }
+  ]
+}
