@@ -547,8 +547,8 @@
             // Load image into canvas for resizing/compression
             const img = new Image();
             img.onload = () => {
-                // Claude max: 1568px longest side, 5MB base64 (~3.5MB raw target)
-                const MAX_DIM = 1568;
+                // Resize to 1000px max — keeps well under Claude's 5MB base64 limit
+                const MAX_DIM = 1000;
                 const TARGET_BYTES = 3.5 * 1024 * 1024; // 3.5MB raw → ~4.7MB base64
                 let w = img.width, h = img.height;
 
