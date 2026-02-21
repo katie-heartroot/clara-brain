@@ -53,4 +53,4 @@ fi
 echo "Brain synced to persistent volume."
 echo "Starting Clara daemon..."
 
-exec python /app/app/clara_daemon.py
+exec python -u /app/app/clara_daemon.py

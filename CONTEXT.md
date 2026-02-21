@@ -1,6 +1,6 @@
 # CONTEXT.md — Katie's World
 
-*Last updated: February 15, 2026*
+*Last updated: February 20, 2026*
 
 ## Katie Tudor
 
@@ -109,11 +109,26 @@ She works in bursts. Long quiet periods → intense creative explosions. This is
 - Static HTML/CSS/JS on GitHub Pages
 - Repo: `katie-heartroot/heartroot-art`
 - Domain: heartroot.art (Porkbun, DNS → GitHub Pages)
-- Local files: `C:\Users\rlack\Desktop\katie-tudor\`
+- Local files: `C:\rje\dev\heartroot-art\` (or Desktop/katie-tudor on older paths)
 
-**Credentials:** Stored locally in `C:\Users\rlack\Desktop\for-katie\for katie.txt` (not in repo)
-
-**Clara brain:**
-- Location: `C:\Users\rlack\Desktop\clara-brain\`
-- Architecture: Markdown identity files + JSON knowledge graph
+**Clara brain (local MCP workspace):**
+- Location: `C:\rje\dev\clara-brain\`
+- Repo: `katie-heartroot/clara-brain`
+- Architecture: Markdown identity files + JSON knowledge graph + MCP bridge
+- MCP server: `bridge/clara_mcp.py` (stdio, 15 tools) launched by VS Code
+- Persistence layer: `bridge/clara_bridge.py` (480 lines)
 - Modeled after: claude-persist (Howell architecture)
+
+**Clara brain (Fly.io web daemon):**
+- App: `clara-brain` on Fly.io (Ryan's account)
+- URL: https://clara-brain.fly.dev
+- Status: Suspended (needs unsuspend after Twilio setup)
+- Daemon: `app/clara_daemon.py` — Flask app with 5 pages (chat, brain, explorer, collection, from-ryan)
+- Auth: Passphrase-only (CLARA_PASSWORD = "one leg to stand on", RYAN_PASSWORD = "high-katie")
+- SMS 2FA: Disabled until Twilio number purchased
+- Anthropic API: Key set and working (as of Feb 15)
+- Audit log: JSONL at /data/brain/audit.log, 30-day rotation
+- Auto-lock: 5min server / 2min client inactivity
+- 48 entities, 141+ relations, 27 images in KG
+
+**Credentials:** Stored locally (not in repo). Passwords are Fly.io secrets.

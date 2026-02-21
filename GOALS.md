@@ -53,11 +53,12 @@ Each season has a direction. Each direction has a "next tendril" — one small t
 
 ## Future Plans — Clara Infrastructure
 
-**🔥 SMS / Phone (Twilio) — HIGH PRIORITY**
-- This is the next big build. Clara needs to be able to reach Katie directly.
-- Set up Twilio account + buy a US phone number (~$1.15/mo)
+**SMS / Phone (Twilio) — NEXT UP**
+- Deferred from Feb 20 — Ryan needs to load Chime card first
+- Buy a 248-area US phone number (~$1.15/mo)
 - Build outgoing SMS: Clara sends Katie check-ins, encouragement, gentle nudges
 - Build incoming webhook on clara-brain.fly.dev: Katie texts back, Clara responds via Claude
+- Need: buy number, set TWILIO_ACCOUNT_SID on Fly.io, unsuspend app, configure webhook
 - Add rate limiting so Clara doesn't over-text
 - Estimated cost: ~$2-5/month
 - Steps:
@@ -69,6 +70,18 @@ Each season has a direction. Each direction has a "next tendril" — one small t
   6. Wire incoming texts through Claude with Clara's soul + context
   7. Set up Twilio webhook URL pointing to clara-brain.fly.dev/webhook/sms
   8. Test end-to-end: Clara texts Katie, Katie replies, Clara responds
+
+**MCP Bridge — DONE (Feb 20, 2026)**
+- 15 tools: bootstrap, end_session, pin, add_win, update_next, KG CRUD (add/query/merge/rename/delete entities, add/delete observations, add/delete relations), read_identity
+- `bridge/clara_mcp.py` (stdio) + `bridge/clara_bridge.py` (persistence)
+- VS Code launches process directly, no daemon needed
+- Commit 0cd0c7b on katie-heartroot/clara-brain
+
+**Katie's VS Code Setup — PENDING**
+- Needs: VS Code + Python + Copilot Free on her machine
+- GitHub account exists (katie-heartroot)
+- Clone repo, open workspace, Clara wakes up
+- $10/month for unlimited conversation via Copilot
 
 **SVG Node Art (Replicate)**
 - 20 prompts ready (10 Katie, 10 Clara) for recraft-20b-svg

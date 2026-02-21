@@ -309,6 +309,7 @@ body {
     <button class="tier-tab" data-tier="greenware" onclick="setTier('greenware')">Greenware <span class="tier-count" id="count-greenware">0</span></button>
     <button class="tier-tab" data-tier="kiln" onclick="setTier('kiln')">The Kiln <span class="tier-count" id="count-kiln">0</span></button>
     <button class="tier-tab" data-tier="from-ryan" onclick="setTier('from-ryan')">From Ryan <span class="tier-count" id="count-from-ryan">0</span></button>
+    <button class="tier-tab" data-tier="clara" onclick="setTier('clara')">Clara <span class="tier-count" id="count-clara">0</span></button>
   </div>
 
   <!-- Tier Description -->
@@ -380,7 +381,8 @@ const TIERS = {
   'root-cellar': 'The Root Cellar',
   'greenware': 'Greenware',
   'kiln': 'The Kiln',
-  'from-ryan': 'From Ryan'
+  'from-ryan': 'From Ryan',
+  'clara': 'Clara'
 };
 
 const TIER_DESC = {
@@ -390,6 +392,7 @@ const TIER_DESC = {
   'greenware':  { poetic: 'Shaped but not yet fired. Handle with care.', practical: 'Ideas taking form — sketches, experiments, early-stage work' },
   'kiln':       { poetic: 'Through the fire. These are done.', practical: 'Finished pieces, portfolio-ready work, things you\'re proud of' },
   'from-ryan':  { poetic: 'Things he made/found for you.', practical: 'Images Ryan saved here for you to see' },
+  'clara':       { poetic: 'Things I made for you. Or just because I could.', practical: 'Images Clara generated via Replicate' },
 };
 
 let password = '';

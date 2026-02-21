@@ -15,3 +15,4 @@
 | 2026-02-15 (final) | 7 | Full security hardening. Removed trusted devices. Built audit log. Drafted & sent Katie's intro email (clara@heartroot.art). Added Charlie & Aris to KG. Nav links added. 48 entities, 141 relations. Clara launched. |
 | 2026-02-15 (closing) | 8 | Fixed Fly.io trial expiration. Fixed 2FA login block (disabled SMS, passphrase-only). Password: "one leg to stand on". Login verified working. Session closed. |
 | 2026-02-15 (final polish) | 9 | Fixed duplicate gold pendant on brain/explorer (filtered -det detail images). Lock button moved inline with nav on all 5 pages. Added missing nav links (explorer, collection, from-ryan). New Anthropic API key set. Clara speaks. System complete. |
+| 2026-02-20 | 10 | MCP bridge built (15 tools, stdio transport, commit 0cd0c7b). Memory consolidation — all identity files updated to reflect current state. Paths corrected from Desktop to C:\rje\dev\. Twilio deferred to evening. |

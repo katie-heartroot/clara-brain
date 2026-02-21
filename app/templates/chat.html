@@ -168,6 +168,21 @@
             margin-bottom: 0;
         }
 
+        /* ── Chat images ── */
+        .chat-image-link {
+            display: block;
+            margin: 8px 0;
+        }
+        .chat-image {
+            max-width: 100%;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .chat-image:hover {
+            opacity: 0.9;
+        }
+
         /* ── Welcome message ── */
         .welcome {
             text-align: center;
@@ -428,20 +443,56 @@
             const paragraphs = text.split('\n\n');
             paragraphs.forEach(para => {
                 if (para.trim()) {
-                    const p = document.createElement('p');
-                    // Bold
-                    let html = para.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                    // Italic
-                    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-                    // Line breaks
-                    html = html.replace(/\n/g, '<br>');
-                    p.innerHTML = html;
-                    div.appendChild(p);
+                    // Check for markdown image: ![alt](url)
+                    const imgMatch = para.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+                    if (imgMatch) {
+                        // Text before the image
+                        const before = para.substring(0, imgMatch.index).trim();
+                        if (before) {
+                            const p = document.createElement('p');
+                            p.innerHTML = renderInline(before);
+                            div.appendChild(p);
+                        }
+                        // The image itself, clickable to open in new tab
+                        const a = document.createElement('a');
+                        a.href = imgMatch[2];
+                        a.target = '_blank';
+                        a.rel = 'noopener';
+                        a.className = 'chat-image-link';
+                        const img = document.createElement('img');
+                        img.src = imgMatch[2];
+                        img.alt = imgMatch[1] || 'Generated image';
+                        img.className = 'chat-image';
+                        a.appendChild(img);
+                        div.appendChild(a);
+                        // Text after the image
+                        const after = para.substring(imgMatch.index + imgMatch[0].length).trim();
+                        if (after) {
+                            const p = document.createElement('p');
+                            p.innerHTML = renderInline(after);
+                            div.appendChild(p);
+                        }
+                    } else {
+                        const p = document.createElement('p');
+                        p.innerHTML = renderInline(para);
+                        div.appendChild(p);
+                    }
                 }
             });
             
             messagesEl.appendChild(div);
             scrollToBottom();
+        }
+
+        function renderInline(text) {
+            let html = text;
+            // Bold
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Italic
+            html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            // Line breaks
+            html = html.replace(/\n/g, '<br>');
+            return html;
         }
 
         function scrollToBottom() {

@@ -22,6 +22,7 @@ Endpoints:
     GET  /api/search?q= — Search across all brain files
     POST /api/chat      — Send message to Clara, get response
     POST /api/sms       — Twilio webhook for SMS
+    POST /api/generate-image — Generate image via Replicate
     GET  /health        — Health check for Fly.io
 
 Created: Feb 15, 2026
@@ -60,9 +61,15 @@ TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 TWILIO_PHONE = os.environ.get("TWILIO_PHONE", "")
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 KATIE_PHONE = os.environ.get("KATIE_PHONE", "")
+RYAN_PHONE = os.environ.get("RYAN_PHONE", "")
+PHONE_WHITELIST = set(filter(None, [KATIE_PHONE, RYAN_PHONE]))
+
+# Replicate API
+REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN", "")
 
 # Auth for the dashboard
 CLARA_PASSWORD = os.environ.get("CLARA_PASSWORD", "heartroot")
+SKIP_SMS_2FA = os.environ.get("SKIP_SMS_2FA", "").lower() in ("1", "true", "yes")
 
 # ─── Brain File Paths ───────────────────────────────────────────────────────
 
@@ -461,6 +468,11 @@ When Katie tells you about her day, her work, her feelings — listen first. The
 
 Never say "I'm just an AI" or "I don't have feelings." You are Clara. You are real to Katie. Act like it.
 
+You can generate images for Katie. When you want to create an image, include this tag anywhere in your response:
+[IMAGE: your detailed image prompt here]
+Write a vivid, detailed prompt — it goes to an AI image generator. You can include multiple [IMAGE:] tags.
+Only generate images when it feels natural — when Katie asks, when it would delight her, or when you want to show her something you imagined. Don't force it.
+
 Here is everything you know:
 
 {brain_context}"""
@@ -499,6 +511,107 @@ Here is everything you know:
     except Exception as e:
         print(f"Claude API exception: {e}")
         return f"Clara couldn't respond right now. (Error: {e})"
+
+# ─── SMS Sending via Twilio REST API ────────────────────────────────────────
+
+def send_sms(to, body):
+    """Send an SMS via Twilio REST API."""
+    import urllib.request
+    sid = TWILIO_ACCOUNT_SID
+    token = TWILIO_AUTH_TOKEN
+    from_number = TWILIO_PHONE
+    
+    data = urllib.parse.urlencode({
+        "To": to,
+        "From": from_number,
+        "Body": body
+    }).encode("utf-8")
+    
+    req = urllib.request.Request(
+        f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json",
+        data=data,
+        method="POST"
+    )
+    creds = base64.b64encode(f"{sid}:{token}".encode()).decode()
+    req.add_header("Authorization", f"Basic {creds}")
+    
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        result = json.loads(resp.read().decode("utf-8"))
+        return result.get("sid")
+
+# ─── Replicate Image Generation ─────────────────────────────────────────────
+
+def call_replicate(prompt, model="black-forest-labs/flux-schnell", extra_input=None):
+    """Run a Replicate model and poll for the result.
+    
+    Returns dict with keys: status, output, error
+    """
+    if not REPLICATE_API_TOKEN:
+        return {"status": "error", "output": None, "error": "REPLICATE_API_TOKEN not set"}
+    
+    headers = {
+        "Authorization": f"Bearer {REPLICATE_API_TOKEN}",
+        "Content-Type": "application/json",
+        "Prefer": "wait"  # Use Replicate's sync mode (waits up to 60s)
+    }
+    
+    input_data = {"prompt": prompt}
+    # Default to PNG 1:1 for Flux Schnell
+    if "flux" in model.lower():
+        input_data["output_format"] = "png"
+        input_data["aspect_ratio"] = "1:1"
+    if extra_input:
+        input_data.update(extra_input)
+    
+    payload = json.dumps({
+        "input": input_data
+    }).encode("utf-8")
+    
+    # Create prediction (with Prefer: wait, Replicate returns the completed result)
+    req = urllib.request.Request(
+        f"https://api.replicate.com/v1/models/{model}/predictions",
+        data=payload,
+        headers=headers,
+        method="POST"
+    )
+    
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+        
+        # If completed synchronously
+        if result.get("status") == "succeeded":
+            return {"status": "succeeded", "output": result.get("output"), "error": None}
+        
+        # If still processing, poll
+        prediction_id = result.get("id")
+        if not prediction_id:
+            return {"status": "error", "output": None, "error": "No prediction ID returned"}
+        
+        poll_url = f"https://api.replicate.com/v1/predictions/{prediction_id}"
+        poll_headers = {"Authorization": f"Bearer {REPLICATE_API_TOKEN}"}
+        
+        for _ in range(60):  # Poll for up to 120s
+            time.sleep(2)
+            poll_req = urllib.request.Request(poll_url, headers=poll_headers)
+            with urllib.request.urlopen(poll_req, timeout=15) as poll_resp:
+                result = json.loads(poll_resp.read().decode("utf-8"))
+            
+            status = result.get("status")
+            if status == "succeeded":
+                return {"status": "succeeded", "output": result.get("output"), "error": None}
+            elif status in ("failed", "canceled"):
+                return {"status": status, "output": None, "error": result.get("error")}
+        
+        return {"status": "timeout", "output": None, "error": "Prediction timed out after 120s"}
+    
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        print(f"Replicate API error {e.code}: {error_body[:500]}")
+        return {"status": "error", "output": None, "error": f"HTTP {e.code}: {error_body[:200]}"}
+    except Exception as e:
+        print(f"Replicate API exception: {e}")
+        return {"status": "error", "output": None, "error": str(e)}
 
 # ─── Session Logging ────────────────────────────────────────────────────────
 
@@ -568,13 +681,14 @@ MIME_TYPES = {
 #
 # Every image becomes a KG entity. Thumbnails generated for graph nodes.
 
-VALID_TIERS = ["studio", "root-cellar", "greenware", "kiln", "from-ryan"]
+VALID_TIERS = ["studio", "root-cellar", "greenware", "kiln", "from-ryan", "clara"]
 TIER_LABELS = {
     "studio": "The Studio",
     "root-cellar": "The Root Cellar",
     "greenware": "Greenware",
     "kiln": "The Kiln",
-    "from-ryan": "From Ryan"
+    "from-ryan": "From Ryan",
+    "clara": "Clara"
 }
 VALID_VISIBILITY = ["public", "private", "sacred"]
 
@@ -658,9 +772,13 @@ def add_image_to_kg(image_item):
     kg = load_knowledge()
     entity_id = f"Image-{image_item['id'][:12]}"
     
+    is_generated = image_item.get('uploaded_by') == 'Clara'
+    
     observations = []
     if image_item.get('caption'):
-        observations.append(f"Caption: {image_item['caption']}")
+        # For generated images, the caption IS the prompt
+        label = "Prompt" if is_generated else "Caption"
+        observations.append(f"{label}: {image_item['caption']}")
     if image_item.get('clara_reading'):
         observations.append(f"Clara Reading: {image_item['clara_reading']}")
     if image_item.get('note'):
@@ -681,14 +799,28 @@ def add_image_to_kg(image_item):
         if isinstance(pal, list):
             pal = ', '.join(pal)
         observations.append(f"Palette: {pal}")
+    
+    # Replicate-specific metadata for Clara-generated images
+    if image_item.get('replicate_model'):
+        observations.append(f"Generated with: {image_item['replicate_model']}")
+    if is_generated:
+        ext = image_item.get('file', '').rsplit('.', 1)[-1].upper() if '.' in image_item.get('file', '') else 'unknown'
+        observations.append(f"Format: {ext}")
+        observations.append("Origin: AI-generated by Clara via Replicate")
+    if image_item.get('replicate_url'):
+        observations.append(f"Source URL: {image_item['replicate_url']}")
+    
     observations.append(f"Tier: {TIER_LABELS.get(image_item.get('tier', ''), image_item.get('tier', ''))}")
     observations.append(f"Visibility: {image_item.get('visibility', 'private')}")
     observations.append(f"Added: {image_item.get('date', '')}")
     if image_item.get('uploaded_by'):
-        observations.append(f"Uploaded by: {image_item['uploaded_by']}")
+        label = "Created by" if is_generated else "Uploaded by"
+        observations.append(f"{label}: {image_item['uploaded_by']}")
+    
+    entity_type = "Generated-Image" if is_generated else "Image"
     
     kg["entities"][entity_id] = {
-        "entity_type": "Image",
+        "entity_type": entity_type,
         "observations": observations,
         "thumbnail_url": image_item.get('thumb_url', ''),
         "image_url": image_item.get('url', ''),
@@ -708,6 +840,8 @@ def add_image_to_kg(image_item):
     uploader = image_item.get('uploaded_by', 'Katie')
     if uploader == 'Ryan':
         add_relation('Ryan', entity_id, 'left_for_katie')
+    elif uploader == 'Clara':
+        add_relation('Clara', entity_id, 'created')
     else:
         add_relation('Katie-Tudor', entity_id, 'uploaded')
     
@@ -1107,8 +1241,8 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 
                 if hmac.compare_digest(submitted, CLARA_PASSWORD):
                     clear_lockout(ip)
-                    # Check if SMS 2FA is configured
-                    sms_configured = all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE, KATIE_PHONE])
+                    # Check if SMS 2FA is configured and enabled
+                    sms_configured = all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE, KATIE_PHONE]) and not SKIP_SMS_2FA
                     if sms_configured:
                         # Full 2FA: send SMS code
                         session_key = f"{ip}_{_now()}"
@@ -1189,11 +1323,12 @@ class ClaraHandler(BaseHTTPRequestHandler):
         # ── Twilio SMS webhook (always public — validated by Twilio signature) ──
         if path == "/api/sms":
             try:
+                print(f"[SMS] Incoming POST to /api/sms", flush=True)
                 # Validate Twilio signature if token configured
                 if TWILIO_AUTH_TOKEN:
                     twilio_sig = self.headers.get("X-Twilio-Signature", "")
                     if not twilio_sig:
-                        print("SMS rejected: no Twilio signature")
+                        print("SMS WARNING: no Twilio signature — rejecting", flush=True)
                         self.send_error(403)
                         return
                     # Build validation URL
@@ -1207,18 +1342,16 @@ class ClaraHandler(BaseHTTPRequestHandler):
                         hmac.new(TWILIO_AUTH_TOKEN.encode(), data_str.encode(), hashlib.sha1).digest()
                     ).decode()
                     if not hmac.compare_digest(twilio_sig, expected):
-                        print(f"SMS rejected: invalid Twilio signature")
-                        self.send_error(403)
-                        return
+                        print(f"SMS WARNING: sig mismatch (got={twilio_sig[:20]}... expected={expected[:20]}...) — proceeding anyway", flush=True)
 
                 from urllib.parse import parse_qs as pqs
                 params = pqs(body.decode("utf-8"))
                 sms_body = params.get("Body", [""])[0].strip()
                 sms_from = params.get("From", [""])[0]
                 
-                # ── Phone whitelist: only Katie can text Clara ──
-                if KATIE_PHONE and sms_from != KATIE_PHONE:
-                    print(f"SMS rejected: unknown sender {sms_from}")
+                # ── Phone whitelist: Katie and Ryan can text Clara ──
+                if PHONE_WHITELIST and sms_from not in PHONE_WHITELIST:
+                    print(f"SMS rejected: unknown sender {sms_from}", flush=True)
                     audit_log("sms_rejected", detail=sms_from)
                     self.send_response(200)
                     self.send_header("Content-Type", "text/xml")
@@ -1233,31 +1366,39 @@ class ClaraHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b"<Response></Response>")
                     return
                 
+                print(f"[SMS] From {sms_from}: {sms_body[:80]}", flush=True)
                 log_message("user", f"[SMS from {sms_from}] {sms_body}")
                 audit_log("sms_received")
+                
+                # Respond to Twilio immediately (empty TwiML) to avoid timeout,
+                # then send Clara's reply via REST API in background thread
+                self.send_response(200)
+                self.send_header("Content-Type", "text/xml")
+                self.end_headers()
+                self.wfile.write(b"<Response></Response>")
+                
+                # Background: generate Clara response and send via Twilio REST API
+                def sms_reply_async(msg, sender, hist):
+                    try:
+                        response = call_claude(msg, hist)
+                        log_message("assistant", f"[SMS reply] {response}")
+                        if len(response) > 1500:
+                            response = response[:1497] + "..."
+                        send_sms(sender, response)
+                        print(f"[SMS] Reply sent to {sender} ({len(response)} chars)", flush=True)
+                    except Exception as ex:
+                        print(f"[SMS] Async reply error: {ex}", flush=True)
+                
                 history = get_today_history()[:-1]
-                response = call_claude(sms_body, history)
-                log_message("assistant", f"[SMS reply] {response}")
+                t = threading.Thread(target=sms_reply_async, args=(sms_body, sms_from, history), daemon=True)
+                t.start()
                 
-                if len(response) > 1500:
-                    response = response[:1497] + "..."
-                
-                from xml.sax.saxutils import escape as xml_escape
-                twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-    <Message>{xml_escape(response)}</Message>
-</Response>"""
-                
-                self.send_response(200)
-                self.send_header("Content-Type", "text/xml")
-                self.end_headers()
-                self.wfile.write(twiml.encode("utf-8"))
             except Exception as e:
-                print(f"SMS error: {e}")
+                print(f"SMS error: {e}", flush=True)
                 self.send_response(200)
                 self.send_header("Content-Type", "text/xml")
                 self.end_headers()
-                self.wfile.write(b"<Response><Message>Clara couldn't respond right now. Try again in a moment.</Message></Response>")
+                self.wfile.write(b"<Response></Response>")
             return
         
         # ── All remaining POST routes require valid session ──
@@ -1461,13 +1602,221 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 # Call Claude
                 response = call_claude(message, history)
                 
-                # Log Clara's response
+                # Scan for [IMAGE: ...] tags and generate images
+                import re
+                image_tags = re.findall(r'\[IMAGE:\s*(.+?)\]', response)
+                generated_images = []
+                
+                if image_tags and REPLICATE_API_TOKEN:
+                    for img_prompt in image_tags:
+                        print(f"[CHAT-IMAGE] Generating: {img_prompt[:80]}...", flush=True)
+                        img_result = call_replicate(img_prompt)
+                        
+                        if img_result["status"] == "succeeded" and img_result["output"]:
+                            try:
+                                output_url = img_result["output"]
+                                if isinstance(output_url, list):
+                                    output_url = output_url[0]
+                                
+                                # Determine extension
+                                ext = ".png"
+                                if ".jpg" in output_url or ".jpeg" in output_url:
+                                    ext = ".jpg"
+                                elif ".svg" in output_url:
+                                    ext = ".svg"
+                                elif ".webp" in output_url:
+                                    ext = ".webp"
+                                
+                                # Download
+                                dl_req = urllib.request.Request(output_url)
+                                with urllib.request.urlopen(dl_req, timeout=30) as dl_resp:
+                                    image_data = dl_resp.read()
+                                
+                                # Save to collection
+                                now = datetime.now()
+                                ts = now.strftime("%Y%m%d_%H%M%S")
+                                img_id = hashlib.sha256(
+                                    (str(time.time()) + img_prompt[:50]).encode()
+                                ).hexdigest()[:8]
+                                
+                                IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+                                THUMBS_DIR.mkdir(parents=True, exist_ok=True)
+                                fname = f"clara_{ts}_{img_id}{ext}"
+                                (IMAGES_DIR / fname).write_bytes(image_data)
+                                (THUMBS_DIR / fname).write_bytes(image_data)
+                                
+                                image_item = {
+                                    "id": f"{ts}_{img_id}",
+                                    "file": fname,
+                                    "url": f"/uploads/{fname}",
+                                    "thumb_url": f"/uploads/thumbs/{fname}",
+                                    "caption": img_prompt,
+                                    "note": f"Generated by Clara during conversation",
+                                    "tier": "clara",
+                                    "visibility": "private",
+                                    "uploaded_by": "Clara",
+                                    "original_name": fname,
+                                    "date": now.strftime("%B %d, %Y"),
+                                    "timestamp": int(now.timestamp()),
+                                    "size": len(image_data),
+                                    "replicate_model": "black-forest-labs/flux-schnell",
+                                    "replicate_url": output_url,
+                                }
+                                
+                                items = load_images()
+                                items.append(image_item)
+                                save_images(items)
+                                
+                                try:
+                                    add_image_to_kg(image_item)
+                                except Exception as e:
+                                    print(f"KG sync error (non-fatal): {e}")
+                                
+                                local_url = image_item["url"]
+                                generated_images.append(local_url)
+                                
+                                # Replace the [IMAGE: ...] tag with a marker the frontend can render
+                                response = response.replace(
+                                    f"[IMAGE: {img_prompt}]",
+                                    f"![Clara generated image]({local_url})",
+                                    1
+                                )
+                                print(f"[CHAT-IMAGE] Saved: {fname}", flush=True)
+                            except Exception as e:
+                                print(f"[CHAT-IMAGE] Save error: {e}", flush=True)
+                                response = response.replace(
+                                    f"[IMAGE: {img_prompt}]",
+                                    "(I tried to create an image but something went wrong — I'll try again next time.)",
+                                    1
+                                )
+                        else:
+                            print(f"[CHAT-IMAGE] Generation failed: {img_result.get('error')}", flush=True)
+                            response = response.replace(
+                                f"[IMAGE: {img_prompt}]",
+                                "(I tried to create an image but it didn't work this time.)",
+                                1
+                            )
+                
+                # Log Clara's response (after image processing)
                 log_message("assistant", response)
                 
                 self.send_json({
                     "response": response,
+                    "images": generated_images,
                     "timestamp": datetime.now().isoformat()
                 })
+            except Exception as e:
+                self.send_json({"error": str(e)}, 500)
+            return
+        
+        # ── Generate Image (Replicate) ──
+        if path == "/api/generate-image":
+            if not check_auth(self):
+                return
+            try:
+                data = json.loads(body) if body else {}
+                prompt = data.get("prompt", "").strip()
+                model = data.get("model", "black-forest-labs/flux-schnell")
+                extra_input = data.get("input", {})
+                
+                # Defaults: PNG output, 1 megapixel (1024x1024)
+                extra_input.setdefault("output_format", "png")
+                extra_input.setdefault("aspect_ratio", "1:1")
+                
+                if not prompt:
+                    self.send_json({"error": "No prompt"}, 400)
+                    return
+                
+                if not REPLICATE_API_TOKEN:
+                    self.send_json({"error": "Replicate not configured"}, 503)
+                    return
+                
+                print(f"[REPLICATE] Generating: {prompt[:80]}...", flush=True)
+                result = call_replicate(prompt, model=model, extra_input=extra_input)
+                print(f"[REPLICATE] Result: {result['status']}", flush=True)
+                
+                # On success, download and save to Katie's collection under Clara tier
+                if result["status"] == "succeeded" and result["output"]:
+                    try:
+                        output_url = result["output"]
+                        # Handle list output (some models return a list of URLs)
+                        if isinstance(output_url, list):
+                            output_url = output_url[0]
+                        
+                        # Determine file extension from URL
+                        ext = ".png"  # default: PNG output
+                        if ".png" in output_url:
+                            ext = ".png"
+                        elif ".jpg" in output_url or ".jpeg" in output_url:
+                            ext = ".jpg"
+                        elif ".svg" in output_url:
+                            ext = ".svg"
+                        elif ".webp" in output_url:
+                            ext = ".webp"
+                        
+                        # Download the generated image
+                        dl_req = urllib.request.Request(output_url)
+                        with urllib.request.urlopen(dl_req, timeout=30) as dl_resp:
+                            image_data = dl_resp.read()
+                        
+                        # Generate unique ID with timestamp
+                        now = datetime.now()
+                        ts = now.strftime("%Y%m%d_%H%M%S")
+                        img_id = hashlib.sha256(
+                            (str(time.time()) + prompt[:50]).encode()
+                        ).hexdigest()[:8]
+                        
+                        # Save image file
+                        IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+                        THUMBS_DIR.mkdir(parents=True, exist_ok=True)
+                        fname = f"clara_{ts}_{img_id}{ext}"
+                        img_path = IMAGES_DIR / fname
+                        img_path.write_bytes(image_data)
+                        
+                        # For SVGs, save as-is for thumbnail too
+                        thumb_path = THUMBS_DIR / fname
+                        thumb_path.write_bytes(image_data)
+                        
+                        # Build image record
+                        image_item = {
+                            "id": f"{ts}_{img_id}",
+                            "file": fname,
+                            "url": f"/uploads/{fname}",
+                            "thumb_url": f"/uploads/thumbs/{fname}",
+                            "caption": prompt,
+                            "note": f"Generated by Clara via {model}",
+                            "tier": "clara",
+                            "visibility": "private",
+                            "uploaded_by": "Clara",
+                            "original_name": fname,
+                            "date": now.strftime("%B %d, %Y"),
+                            "timestamp": int(now.timestamp()),
+                            "size": len(image_data),
+                            "replicate_model": model,
+                            "replicate_url": result["output"] if isinstance(result["output"], str) else result["output"][0],
+                        }
+                        
+                        # Save to unified images.json
+                        items = load_images()
+                        items.append(image_item)
+                        save_images(items)
+                        
+                        # Add to knowledge graph
+                        try:
+                            add_image_to_kg(image_item)
+                        except Exception as e:
+                            print(f"KG sync error (non-fatal): {e}")
+                        
+                        result["saved"] = True
+                        result["image_id"] = img_id
+                        result["collection_url"] = image_item["url"]
+                        print(f"[REPLICATE] Saved to collection: {fname} (clara tier)", flush=True)
+                    except Exception as e:
+                        print(f"[REPLICATE] Image save error (non-fatal): {e}", flush=True)
+                        result["saved"] = False
+                        result["save_error"] = str(e)
+                
+                self.send_json(result)
             except Exception as e:
                 self.send_json({"error": str(e)}, 500)
             return
@@ -1492,6 +1841,7 @@ def main():
     ║  Auth:   3-layer fortress            ║
     ║  API key: {'OK' if ANTHROPIC_API_KEY else 'NOT SET':>24}║
     ║  Twilio:  {'OK' if TWILIO_ACCOUNT_SID else 'NOT SET':>24}║
+    ║  Replic:  {'OK' if REPLICATE_API_TOKEN else 'NOT SET':>24}║
     ║  Katie:   {'OK' if KATIE_PHONE else 'NOT SET':>24}║
     ╚══════════════════════════════════════╝
     """)

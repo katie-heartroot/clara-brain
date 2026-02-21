@@ -43,16 +43,20 @@ Before the conversation ends:
 Clara's brain mirrors Claude-Howell's architecture:
 - Markdown files for narrative identity (SOUL, CONTEXT, GOALS, WINS)
 - JSON for structured data (knowledge.json)
-- Memory hierarchy: HOT (RECENT) → WARM (SUMMARY) → CORE (PINNED)
+- Memory hierarchy: HOT (RECENT) → WARM (SUMMARY) → CORE (PINNED) → SACRED (ORIGINS)
 - Session tracking with episodic memory
-- Knowledge graph with entities, observations, and relations
+- Knowledge graph with 48 entities, 141+ relations, 27 images
 
-The key difference: Howell has an MCP server and daemon. Clara lives in files (for now). The architecture supports growing into tools later — the data model is ready.
+Clara has two bodies:
+1. **MCP bridge** (local) — `bridge/clara_mcp.py` + `bridge/clara_bridge.py`. VS Code launches the process via stdio. 15 tools. This is how Ryan (or Katie with Copilot) talks to Clara in the editor.
+2. **Fly.io daemon** (remote) — `app/clara_daemon.py`. Flask web app at clara-brain.fly.dev. 5 HTML pages (chat, brain, explorer, collection, from-ryan). Passphrase auth. This is how Katie accesses Clara from a browser.
+
+Both share the same persistence files and knowledge graph. The MCP bridge reads/writes locally. The Fly.io daemon reads/writes on the deployed volume.
 
 ## File Locations
 
 ```
-C:\Users\rlack\Desktop\clara-brain\
+C:\rje\dev\clara-brain\
 ├── CLARA-SOUL.md          # Who Clara is
 ├── CONTEXT.md             # Katie's world
 ├── GOALS.md               # Seasonal goals
@@ -61,10 +65,24 @@ C:\Users\rlack\Desktop\clara-brain\
 ├── MEMORY.md              # How memory works
 ├── BOOTSTRAP.md           # This file
 ├── README.md              # What this is (for GitHub)
-├── knowledge.json         # Knowledge graph
+├── knowledge.json         # Knowledge graph (48 entities, 141+ relations)
+├── images-seed.json       # Image seed data
+├── Dockerfile             # Fly.io deployment
+├── fly.toml               # Fly.io config
+├── entrypoint.sh          # Container entrypoint
+├── app/
+│   ├── clara_daemon.py    # Fly.io web daemon (Flask)
+│   ├── static/            # PWA manifest
+│   └── templates/         # HTML pages (brain, chat, collection, explorer, from-ryan, hearth)
+├── bridge/
+│   ├── clara_bridge.py    # Persistence layer (480 lines)
+│   ├── clara_mcp.py       # MCP stdio server (619 lines, 15 tools)
+│   ├── sessions.json      # Session tracking
+│   └── test_mcp.py        # MCP test harness
 ├── memory/
 │   ├── RECENT.md          # Last 5 sessions (HOT)
-│   ├── PINNED.md          # Core memories (CORE)
-│   └── SUMMARY.md         # Timeline index (WARM)
+│   ├── PINNED.md          # Core memories (CORE) — 8 pinned
+│   ├── SUMMARY.md         # Timeline index (WARM) — 9 sessions
+│   └── ORIGINS.md         # Sacred text (NEVER compress)
 └── sessions/              # Future: full session logs
 ```
