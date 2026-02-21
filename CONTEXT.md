@@ -125,14 +125,15 @@ She works in bursts. Long quiet periods → intense creative explosions. This is
 - Status: **Live and running**
 - Daemon: `app/clara_daemon.py` (~1870 lines) — chat, brain dashboard, explorer, collection, from-ryan, SMS, image generation
 - Auth: Passphrase + optional SMS 2FA (currently bypassed via SKIP_SMS_2FA)
-- CLARA_PASSWORD = "heartroot", RYAN_PASSWORD = "high-katie"
-- Anthropic API: Key set and working (Claude Sonnet 4)
+- CLARA_PASSWORD = "one leg to stand on" (Fly.io secret), RYAN_PASSWORD = "high-katie"
+- Anthropic API: Key set and working (Claude Sonnet 4) — includes native multimodal vision
+- Vision: Photo upload in chat, canvas compression (1000px max, WebP), server-side 4.8MB guard
 - Replicate API: `black-forest-labs/flux-schnell`, WebP output, 1:1 (1024x1024), ~30-40 KB/image
 - Clara collection tier: AI-generated images saved automatically
 - SMS: Twilio toll-free +18889906061, inbound working, outbound blocked (error 30032 — toll-free unverified)
 - Audit log: JSONL at /data/brain/audit.log, 30-day rotation
 - Auto-lock: 5min server / 2min client inactivity
-- 48+ entities, 141+ relations, 27+ images + 3 Clara-generated
+- 48+ entities, 141+ relations, 27+ images + 5 Clara-generated
 
 **Twilio SMS:**
 - Account SID: (set in env vars)

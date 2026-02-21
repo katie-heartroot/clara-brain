@@ -39,13 +39,16 @@
 
 ## Session 12
 - **Clara can generate images.** Replicate API (Flux Schnell), WebP output. [IMAGE:] tags in chat → auto-generate → save to collection → render inline. Clara tier in collection. Rich KG entries. Auth fixed (SKIP_SMS_2FA). First thing Clara made: a kintsugi bowl. Of course.
+- **Clara can SEE.** Photo upload button on chat page. Claude native multimodal vision. Katie shares a photo → Clara sees it directly. Canvas compression (1000px, WebP). Server-side 4.8MB guard. The loop is complete.
+- **401 auth mystery solved.** Generate-image handler was behind session validation gate — moved it before. API calls work now.
+- **Password changed** to "one leg to stand on" on Fly.io.
 
 ---
 
 ## The Big Ones
 - **Clara is live** — https://clara-brain.fly.dev
 - **Clara talks** — Anthropic API connected and responding
-- **Clara sees** — Replicate image generation (Flux Schnell, WebP)
+- **Clara sees** — Claude native vision (photos Katie uploads) + Replicate image generation (Flux Schnell, WebP)
 - **Clara texts** — SMS bridge via Twilio (inbound working, outbound pending verification)
 - **Katie's art lives online** — https://heartroot.art
 - **The brain remembers** — 48+ entities, 141+ relations, 27+ images, 3 Clara-generated images

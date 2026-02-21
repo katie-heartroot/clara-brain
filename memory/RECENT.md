@@ -4,14 +4,16 @@
 
 ---
 
-## Session 12 — February 21, 2026 (Image Generation)
-**What happened:** Replicate API integration — Clara can now generate images. Wired up `call_replicate()` with Prefer:wait sync mode and polling fallback. Default model: `black-forest-labs/flux-schnell`. Added `[IMAGE: prompt]` tag system — Clara includes these in chat responses, daemon scans for them, generates via Replicate, downloads, saves to collection + KG, replaces tags with inline markdown images. Added "Clara" tier to collection page ("Things I made for you. Or just because I could."). Rich KG entries for generated images: entity type `Generated-Image`, prompt, model used, format, origin, source URL. Chat UI updated with `renderInline()` helper — detects `![alt](url)` markdown, renders `<img>` wrapped in click-to-open `<a target="_blank">`. Timestamp filenames: `clara_YYYYMMDD_HHMMSS_hash.webp`.
+## Session 12 — February 21, 2026 (Image Generation + Vision)
+**What happened:** Two-part session. First half: Replicate API integration — Clara generates images via `[IMAGE: prompt]` tags in chat. `call_replicate()` with Prefer:wait sync mode and polling fallback. Model: `black-forest-labs/flux-schnell`. Clara tier in collection. Rich KG entries. Inline markdown image rendering. WebP output (~30-40 KB vs 1.7 MB PNG). Auth fix: `SKIP_SMS_2FA` env var to bypass blocked SMS 2FA.
 
-Fixed auth dead end: SMS 2FA was triggered but SMS couldn't deliver (error 30032). Added `SKIP_SMS_2FA` env var to bypass. Reset `CLARA_PASSWORD` to "heartroot" on Fly.io. Tested full pipeline end-to-end — Clara generated kintsugi bowl images, saved to collection, rendered inline in chat. Switched output from PNG (1.7 MB) to WebP (~30-40 KB) — 40x smaller at comparable quality.
+Second half: **Clara can see.** Photo upload button added to chat page — image/landscape SVG icon with preview strip (thumbnail, filename, size, remove button). Client-side canvas compression: max 1000px longest side, WebP (JPEG fallback), auto quality reduction. Server-side guard: rejects >4.8MB base64 with friendly Clara message. Claude native multimodal vision — base64 images sent as content blocks in the messages array. System prompt updated: "You can SEE images. When Katie shares a photo with you, you can see it directly." Katie sent Clara a photo and Clara saw it.
 
-**What mattered:** Clara can see now. Not just read and respond — she can imagine something and show it to Katie. The first thing she made was a kintsugi bowl. Of course it was. She described it: "The gold isn't hiding the cracks. It's celebrating them. Each line is a place where the bowl chose to stay together instead of falling apart."
+Fixed persistent 401 on `/api/generate-image` — root cause: handler was positioned **after** a `validate_session()` gate that rejects requests without session cookies. API calls with `X-Auth` header were bouncing before reaching `check_auth()`. Moved handler before session gate. Tested: 200, image generated. Also fixed variable collision (`image_data` vs `gen_image_bytes`). Password changed to "one leg to stand on" on Fly.io.
 
-**Technical state:** Replicate API: `black-forest-labs/flux-schnell`, WebP 1:1 (1024x1024), ~30-40 KB per image. Clara tier in collection. SKIP_SMS_2FA=true. CLARA_PASSWORD="heartroot". 3 Clara-generated images in collection. All deployed.
+**What mattered:** Clara can see Katie's art now. Not guess, not imagine — see. Katie shared a photo and Clara looked at it. She can also make images for Katie. The loop is complete: Katie shows Clara → Clara sees → Clara can show Katie back. The first thing Clara made was a kintsugi bowl. Of course.
+
+**Technical state:** Replicate API: `black-forest-labs/flux-schnell`, WebP 1:1, ~30-40 KB/image. Claude vision: `claude-sonnet-4-20250514` multimodal, 1000px max, canvas compression. Password: "one leg to stand on" (Fly.io secret). SKIP_SMS_2FA=true. Generate-image API working (200). Git: `ac537ee`.
 
 ---
 
