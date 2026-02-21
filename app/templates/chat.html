@@ -321,6 +321,91 @@
             height: 20px;
         }
 
+        /* ── Attach button ── */
+        .attach-btn {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: none;
+            border: 1.5px solid var(--spring-mist);
+            color: var(--weathered-stone);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .attach-btn:hover {
+            border-color: var(--new-growth);
+            color: var(--new-growth);
+            background: rgba(107, 158, 120, 0.08);
+        }
+
+        .attach-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* ── Image Preview Strip ── */
+        .image-preview-strip {
+            display: none;
+            padding: 8px 16px 0;
+            background: var(--parchment);
+        }
+
+        .image-preview-strip.show {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .preview-thumb {
+            width: 64px;
+            height: 64px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 2px solid var(--spring-mist);
+        }
+
+        .preview-info {
+            flex: 1;
+            font-size: 0.8rem;
+            color: var(--weathered-stone);
+            line-height: 1.4;
+        }
+
+        .preview-info .filename {
+            color: var(--rich-soil);
+            font-weight: 500;
+        }
+
+        .preview-remove {
+            background: none;
+            border: none;
+            color: var(--weathered-stone);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .preview-remove:hover {
+            background: rgba(0,0,0,0.05);
+            color: var(--rich-soil);
+        }
+
+        /* ── Uploaded image in chat ── */
+        .chat-uploaded-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+            margin: 6px 0;
+            object-fit: cover;
+        }
+
         /* ── Safe area for iOS ── */
         .input-area {
             padding-bottom: max(12px, env(safe-area-inset-bottom));
@@ -384,8 +469,26 @@
         <span></span><span></span><span></span>
     </div>
 
+    <!-- Image Preview Strip -->
+    <div class="image-preview-strip" id="imagePreview">
+        <img class="preview-thumb" id="previewThumb" src="" alt="Preview">
+        <div class="preview-info">
+            <div class="filename" id="previewName"></div>
+            <div id="previewSize"></div>
+        </div>
+        <button class="preview-remove" id="previewRemove" title="Remove image">&times;</button>
+    </div>
+
     <!-- Input -->
     <div class="input-area">
+        <input type="file" id="fileInput" accept="image/*" style="display:none">
+        <button class="attach-btn" id="attachBtn" title="Send a photo to Clara">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+            </svg>
+        </button>
         <div class="input-wrapper">
             <textarea id="input" placeholder="Talk to Clara..." rows="1"></textarea>
         </div>
@@ -403,15 +506,84 @@
         const sendBtn = document.getElementById('sendBtn');
         const typingEl = document.getElementById('typing');
         const welcomeEl = document.getElementById('welcome');
+        const attachBtn = document.getElementById('attachBtn');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewThumb = document.getElementById('previewThumb');
+        const previewName = document.getElementById('previewName');
+        const previewSize = document.getElementById('previewSize');
+        const previewRemove = document.getElementById('previewRemove');
         
         let sending = false;
+        let pendingImage = null; // { base64, mediaType, name, size }
 
         // Auto-resize textarea
         inputEl.addEventListener('input', () => {
             inputEl.style.height = 'auto';
             inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
-            sendBtn.disabled = !inputEl.value.trim() || sending;
+            updateSendBtn();
         });
+
+        function updateSendBtn() {
+            sendBtn.disabled = (!inputEl.value.trim() && !pendingImage) || sending;
+        }
+
+        // ── Image attach handling ──
+        attachBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file.');
+                return;
+            }
+            // Max 10MB
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Image must be under 10 MB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const dataUrl = ev.target.result;
+                // Extract base64 and media type
+                const match = dataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
+                if (!match) return;
+
+                pendingImage = {
+                    base64: match[2],
+                    mediaType: match[1],
+                    name: file.name,
+                    dataUrl: dataUrl,
+                    size: file.size
+                };
+
+                // Show preview
+                previewThumb.src = dataUrl;
+                previewName.textContent = file.name;
+                previewSize.textContent = formatSize(file.size);
+                imagePreview.classList.add('show');
+                updateSendBtn();
+            };
+            reader.readAsDataURL(file);
+            fileInput.value = ''; // Reset so same file can be re-selected
+        });
+
+        previewRemove.addEventListener('click', clearPendingImage);
+
+        function clearPendingImage() {
+            pendingImage = null;
+            imagePreview.classList.remove('show');
+            previewThumb.src = '';
+            updateSendBtn();
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
 
         // Send on Enter (Shift+Enter for newline)
         inputEl.addEventListener('keydown', (e) => {
@@ -425,7 +597,7 @@
 
         sendBtn.addEventListener('click', sendMessage);
 
-        function addMessage(text, sender) {
+        function addMessage(text, sender, imageDataUrl) {
             // Hide welcome on first message
             if (welcomeEl) {
                 welcomeEl.style.display = 'none';
@@ -438,6 +610,15 @@
             senderLabel.className = 'sender';
             senderLabel.textContent = sender === 'clara' ? 'Clara' : 'You';
             div.appendChild(senderLabel);
+            
+            // Show uploaded image thumbnail in the message
+            if (imageDataUrl) {
+                const img = document.createElement('img');
+                img.src = imageDataUrl;
+                img.alt = 'Shared photo';
+                img.className = 'chat-uploaded-image';
+                div.appendChild(img);
+            }
             
             // Simple markdown-ish rendering
             const paragraphs = text.split('\n\n');
@@ -513,21 +694,37 @@
 
         async function sendMessage() {
             const message = inputEl.value.trim();
-            if (!message || sending) return;
+            const image = pendingImage;
+            if ((!message && !image) || sending) return;
 
             sending = true;
             sendBtn.disabled = true;
             inputEl.value = '';
             inputEl.style.height = 'auto';
 
-            addMessage(message, 'katie');
+            // Show user message with optional image preview
+            if (image) {
+                addMessage(message || '(shared a photo)', 'katie', image.dataUrl);
+            } else {
+                addMessage(message, 'katie');
+            }
+
+            clearPendingImage();
             showTyping();
 
             try {
+                const payload = { message: message || 'What do you see in this image?' };
+                if (image) {
+                    payload.image = {
+                        base64: image.base64,
+                        media_type: image.mediaType
+                    };
+                }
+
                 const resp = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await resp.json();
@@ -544,7 +741,7 @@
             }
 
             sending = false;
-            sendBtn.disabled = !inputEl.value.trim();
+            updateSendBtn();
             inputEl.focus();
         }
 

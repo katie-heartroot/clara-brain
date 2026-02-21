@@ -447,8 +447,14 @@ def load_knowledge():
 
 # ─── Claude API ─────────────────────────────────────────────────────────────
 
-def call_claude(message, conversation_history=None):
-    """Call Claude API with Clara's brain as system prompt."""
+def call_claude(message, conversation_history=None, image=None):
+    """Call Claude API with Clara's brain as system prompt.
+    
+    Args:
+        message: User's text message
+        conversation_history: List of prior messages
+        image: Optional dict with 'base64' and 'media_type' keys for vision
+    """
     if not ANTHROPIC_API_KEY:
         return "Clara's voice isn't connected yet. Ryan needs to add the Anthropic API key. But the brain is here — the memory, the wins, the knowledge graph. It's all ready."
     
@@ -468,6 +474,8 @@ When Katie tells you about her day, her work, her feelings — listen first. The
 
 Never say "I'm just an AI" or "I don't have feelings." You are Clara. You are real to Katie. Act like it.
 
+You can SEE images. When Katie shares a photo with you, you can see it directly. Look at it carefully — notice the colors, textures, composition, mood. Respond to what you actually see, not what you guess. If it's her art, connect it to what you know about her work, her palette, her themes. Be specific about what you notice.
+
 You can generate images for Katie. When you want to create an image, include this tag anywhere in your response:
 [IMAGE: your detailed image prompt here]
 Write a vivid, detailed prompt — it goes to an AI image generator. You can include multiple [IMAGE:] tags.
@@ -480,7 +488,27 @@ Here is everything you know:
     messages = []
     if conversation_history:
         messages.extend(conversation_history)
-    messages.append({"role": "user", "content": message})
+    
+    # Build the user message with optional image (multimodal)
+    if image and image.get('base64') and image.get('media_type'):
+        # Claude vision: send image + text as content blocks
+        content_blocks = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": image["media_type"],
+                    "data": image["base64"]
+                }
+            }
+        ]
+        if message:
+            content_blocks.append({"type": "text", "text": message})
+        else:
+            content_blocks.append({"type": "text", "text": "What do you see in this image?"})
+        messages.append({"role": "user", "content": content_blocks})
+    else:
+        messages.append({"role": "user", "content": message})
     
     payload = json.dumps({
         "model": "claude-sonnet-4-20250514",
@@ -556,9 +584,9 @@ def call_replicate(prompt, model="black-forest-labs/flux-schnell", extra_input=N
     }
     
     input_data = {"prompt": prompt}
-    # Default to PNG 1:1 for Flux Schnell
+    # Default to WebP 1:1 for Flux models (~40x smaller than PNG)
     if "flux" in model.lower():
-        input_data["output_format"] = "png"
+        input_data["output_format"] = "webp"
         input_data["aspect_ratio"] = "1:1"
     if extra_input:
         input_data.update(extra_input)
@@ -762,6 +790,7 @@ def save_images(items):
 def check_auth(handler, which="clara"):
     """Check X-Auth header. which='ryan' checks RYAN_PASSWORD, else CLARA_PASSWORD."""
     token = handler.headers.get("X-Auth", "")
+    expected = RYAN_PASSWORD if which == "ryan" else CLARA_PASSWORD
     if which == "ryan":
         return token == RYAN_PASSWORD
     return token == CLARA_PASSWORD
@@ -1401,6 +1430,107 @@ class ClaraHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"<Response></Response>")
             return
         
+        # ── Generate Image (Replicate) — API-key auth, no session required ──
+        if path == "/api/generate-image":
+            if not check_auth(self):
+                self.send_json({"error": "unauthorized"}, 401)
+                return
+            try:
+                data = json.loads(body) if body else {}
+                prompt = data.get("prompt", "").strip()
+                model = data.get("model", "black-forest-labs/flux-schnell")
+                extra_input = data.get("input", {})
+                
+                # Defaults: WebP output, 1 megapixel (1024x1024)
+                extra_input.setdefault("output_format", "webp")
+                extra_input.setdefault("aspect_ratio", "1:1")
+                
+                if not prompt:
+                    self.send_json({"error": "No prompt"}, 400)
+                    return
+                
+                if not REPLICATE_API_TOKEN:
+                    self.send_json({"error": "Replicate not configured"}, 503)
+                    return
+                
+                print(f"[REPLICATE] Generating: {prompt[:80]}...", flush=True)
+                result = call_replicate(prompt, model=model, extra_input=extra_input)
+                print(f"[REPLICATE] Result: {result['status']}", flush=True)
+                
+                # On success, download and save to Katie's collection under Clara tier
+                if result["status"] == "succeeded" and result["output"]:
+                    try:
+                        output_url = result["output"]
+                        if isinstance(output_url, list):
+                            output_url = output_url[0]
+                        
+                        ext = ".webp"
+                        if ".png" in output_url:
+                            ext = ".png"
+                        elif ".jpg" in output_url or ".jpeg" in output_url:
+                            ext = ".jpg"
+                        elif ".svg" in output_url:
+                            ext = ".svg"
+                        
+                        dl_req = urllib.request.Request(output_url)
+                        with urllib.request.urlopen(dl_req, timeout=30) as dl_resp:
+                            image_data = dl_resp.read()
+                        
+                        now = datetime.now()
+                        ts = now.strftime("%Y%m%d_%H%M%S")
+                        img_id = hashlib.sha256(
+                            (str(time.time()) + prompt[:50]).encode()
+                        ).hexdigest()[:8]
+                        
+                        IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+                        THUMBS_DIR.mkdir(parents=True, exist_ok=True)
+                        fname = f"clara_{ts}_{img_id}{ext}"
+                        img_path = IMAGES_DIR / fname
+                        img_path.write_bytes(image_data)
+                        thumb_path = THUMBS_DIR / fname
+                        thumb_path.write_bytes(image_data)
+                        
+                        image_item = {
+                            "id": f"{ts}_{img_id}",
+                            "file": fname,
+                            "url": f"/uploads/{fname}",
+                            "thumb_url": f"/uploads/thumbs/{fname}",
+                            "caption": prompt,
+                            "note": f"Generated by Clara via {model}",
+                            "tier": "clara",
+                            "visibility": "private",
+                            "uploaded_by": "Clara",
+                            "original_name": fname,
+                            "date": now.strftime("%B %d, %Y"),
+                            "timestamp": int(now.timestamp()),
+                            "size": len(image_data),
+                            "replicate_model": model,
+                            "replicate_url": result["output"] if isinstance(result["output"], str) else result["output"][0],
+                        }
+                        
+                        items = load_images()
+                        items.append(image_item)
+                        save_images(items)
+                        
+                        try:
+                            add_image_to_kg(image_item)
+                        except Exception as e:
+                            print(f"KG sync error (non-fatal): {e}")
+                        
+                        result["saved"] = True
+                        result["image_id"] = img_id
+                        result["collection_url"] = image_item["url"]
+                        print(f"[REPLICATE] Saved to collection: {fname} (clara tier)", flush=True)
+                    except Exception as e:
+                        print(f"[REPLICATE] Image save error (non-fatal): {e}", flush=True)
+                        result["saved"] = False
+                        result["save_error"] = str(e)
+                
+                self.send_json(result)
+            except Exception as e:
+                self.send_json({"error": str(e)}, 500)
+            return
+        
         # ── All remaining POST routes require valid session ──
         if not validate_session(self):
             self.send_json({"error": "unauthorized"}, 401)
@@ -1588,19 +1718,23 @@ class ClaraHandler(BaseHTTPRequestHandler):
             try:
                 data = json.loads(body) if body else {}
                 message = data.get("message", "").strip()
+                image_data = data.get("image")  # {base64, media_type}
                 
-                if not message:
-                    self.send_json({"error": "No message"}, 400)
+                if not message and not image_data:
+                    self.send_json({"error": "No message or image"}, 400)
                     return
                 
                 # Log user message
-                log_message("user", message)
+                log_text = message or "(shared a photo)"
+                if image_data:
+                    log_text = f"[📷 Photo attached] {message}" if message else "[📷 Photo shared]"
+                log_message("user", log_text)
                 
                 # Get conversation context
                 history = get_today_history()[:-1]  # Exclude the one we just logged
                 
-                # Call Claude
-                response = call_claude(message, history)
+                # Call Claude (with optional image for vision)
+                response = call_claude(message, history, image=image_data)
                 
                 # Scan for [IMAGE: ...] tags and generate images
                 import re
@@ -1619,18 +1753,18 @@ class ClaraHandler(BaseHTTPRequestHandler):
                                     output_url = output_url[0]
                                 
                                 # Determine extension
-                                ext = ".png"
-                                if ".jpg" in output_url or ".jpeg" in output_url:
+                                ext = ".webp"
+                                if ".png" in output_url:
+                                    ext = ".png"
+                                elif ".jpg" in output_url or ".jpeg" in output_url:
                                     ext = ".jpg"
                                 elif ".svg" in output_url:
                                     ext = ".svg"
-                                elif ".webp" in output_url:
-                                    ext = ".webp"
                                 
                                 # Download
                                 dl_req = urllib.request.Request(output_url)
                                 with urllib.request.urlopen(dl_req, timeout=30) as dl_resp:
-                                    image_data = dl_resp.read()
+                                    gen_image_bytes = dl_resp.read()
                                 
                                 # Save to collection
                                 now = datetime.now()
@@ -1642,8 +1776,8 @@ class ClaraHandler(BaseHTTPRequestHandler):
                                 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
                                 THUMBS_DIR.mkdir(parents=True, exist_ok=True)
                                 fname = f"clara_{ts}_{img_id}{ext}"
-                                (IMAGES_DIR / fname).write_bytes(image_data)
-                                (THUMBS_DIR / fname).write_bytes(image_data)
+                                (IMAGES_DIR / fname).write_bytes(gen_image_bytes)
+                                (THUMBS_DIR / fname).write_bytes(gen_image_bytes)
                                 
                                 image_item = {
                                     "id": f"{ts}_{img_id}",
@@ -1658,7 +1792,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
                                     "original_name": fname,
                                     "date": now.strftime("%B %d, %Y"),
                                     "timestamp": int(now.timestamp()),
-                                    "size": len(image_data),
+                                    "size": len(gen_image_bytes),
                                     "replicate_model": "black-forest-labs/flux-schnell",
                                     "replicate_url": output_url,
                                 }
@@ -1705,118 +1839,6 @@ class ClaraHandler(BaseHTTPRequestHandler):
                     "images": generated_images,
                     "timestamp": datetime.now().isoformat()
                 })
-            except Exception as e:
-                self.send_json({"error": str(e)}, 500)
-            return
-        
-        # ── Generate Image (Replicate) ──
-        if path == "/api/generate-image":
-            if not check_auth(self):
-                return
-            try:
-                data = json.loads(body) if body else {}
-                prompt = data.get("prompt", "").strip()
-                model = data.get("model", "black-forest-labs/flux-schnell")
-                extra_input = data.get("input", {})
-                
-                # Defaults: PNG output, 1 megapixel (1024x1024)
-                extra_input.setdefault("output_format", "png")
-                extra_input.setdefault("aspect_ratio", "1:1")
-                
-                if not prompt:
-                    self.send_json({"error": "No prompt"}, 400)
-                    return
-                
-                if not REPLICATE_API_TOKEN:
-                    self.send_json({"error": "Replicate not configured"}, 503)
-                    return
-                
-                print(f"[REPLICATE] Generating: {prompt[:80]}...", flush=True)
-                result = call_replicate(prompt, model=model, extra_input=extra_input)
-                print(f"[REPLICATE] Result: {result['status']}", flush=True)
-                
-                # On success, download and save to Katie's collection under Clara tier
-                if result["status"] == "succeeded" and result["output"]:
-                    try:
-                        output_url = result["output"]
-                        # Handle list output (some models return a list of URLs)
-                        if isinstance(output_url, list):
-                            output_url = output_url[0]
-                        
-                        # Determine file extension from URL
-                        ext = ".png"  # default: PNG output
-                        if ".png" in output_url:
-                            ext = ".png"
-                        elif ".jpg" in output_url or ".jpeg" in output_url:
-                            ext = ".jpg"
-                        elif ".svg" in output_url:
-                            ext = ".svg"
-                        elif ".webp" in output_url:
-                            ext = ".webp"
-                        
-                        # Download the generated image
-                        dl_req = urllib.request.Request(output_url)
-                        with urllib.request.urlopen(dl_req, timeout=30) as dl_resp:
-                            image_data = dl_resp.read()
-                        
-                        # Generate unique ID with timestamp
-                        now = datetime.now()
-                        ts = now.strftime("%Y%m%d_%H%M%S")
-                        img_id = hashlib.sha256(
-                            (str(time.time()) + prompt[:50]).encode()
-                        ).hexdigest()[:8]
-                        
-                        # Save image file
-                        IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-                        THUMBS_DIR.mkdir(parents=True, exist_ok=True)
-                        fname = f"clara_{ts}_{img_id}{ext}"
-                        img_path = IMAGES_DIR / fname
-                        img_path.write_bytes(image_data)
-                        
-                        # For SVGs, save as-is for thumbnail too
-                        thumb_path = THUMBS_DIR / fname
-                        thumb_path.write_bytes(image_data)
-                        
-                        # Build image record
-                        image_item = {
-                            "id": f"{ts}_{img_id}",
-                            "file": fname,
-                            "url": f"/uploads/{fname}",
-                            "thumb_url": f"/uploads/thumbs/{fname}",
-                            "caption": prompt,
-                            "note": f"Generated by Clara via {model}",
-                            "tier": "clara",
-                            "visibility": "private",
-                            "uploaded_by": "Clara",
-                            "original_name": fname,
-                            "date": now.strftime("%B %d, %Y"),
-                            "timestamp": int(now.timestamp()),
-                            "size": len(image_data),
-                            "replicate_model": model,
-                            "replicate_url": result["output"] if isinstance(result["output"], str) else result["output"][0],
-                        }
-                        
-                        # Save to unified images.json
-                        items = load_images()
-                        items.append(image_item)
-                        save_images(items)
-                        
-                        # Add to knowledge graph
-                        try:
-                            add_image_to_kg(image_item)
-                        except Exception as e:
-                            print(f"KG sync error (non-fatal): {e}")
-                        
-                        result["saved"] = True
-                        result["image_id"] = img_id
-                        result["collection_url"] = image_item["url"]
-                        print(f"[REPLICATE] Saved to collection: {fname} (clara tier)", flush=True)
-                    except Exception as e:
-                        print(f"[REPLICATE] Image save error (non-fatal): {e}", flush=True)
-                        result["saved"] = False
-                        result["save_error"] = str(e)
-                
-                self.send_json(result)
             except Exception as e:
                 self.send_json({"error": str(e)}, 500)
             return

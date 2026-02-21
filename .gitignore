@@ -9,3 +9,7 @@ bridge/sessions.json
 bridge/test_mcp.py
 knowledge.json.bak
 knowledge.json.tmp
+submit_tf*.py
+unassign_number.py
+create_secondary_profile.py
+submit_tf_verification.ps1
