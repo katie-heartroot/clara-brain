@@ -512,7 +512,7 @@ Here is everything you know:
     
     payload = json.dumps({
         "model": "claude-sonnet-4-20250514",
-        "max_tokens": 1024,
+        "max_tokens": 2048,
         "system": system_prompt,
         "messages": messages
     }).encode("utf-8")
@@ -1736,6 +1736,56 @@ class ClaraHandler(BaseHTTPRequestHandler):
                         })
                         return
                 
+                # Save uploaded photo to Katie's collection
+                if image_data and image_data.get("base64"):
+                    try:
+                        raw_bytes = base64.b64decode(image_data["base64"])
+                        now_upload = datetime.now()
+                        ts_upload = now_upload.strftime("%Y%m%d_%H%M%S")
+                        upload_id = hashlib.sha256(
+                            (str(time.time()) + "upload").encode()
+                        ).hexdigest()[:8]
+                        
+                        # Determine extension from media type
+                        mt = image_data.get("media_type", "image/jpeg")
+                        ext_map = {"image/webp": ".webp", "image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif"}
+                        upload_ext = ext_map.get(mt, ".jpg")
+                        
+                        IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+                        THUMBS_DIR.mkdir(parents=True, exist_ok=True)
+                        upload_fname = f"katie_{ts_upload}_{upload_id}{upload_ext}"
+                        (IMAGES_DIR / upload_fname).write_bytes(raw_bytes)
+                        (THUMBS_DIR / upload_fname).write_bytes(raw_bytes)
+                        
+                        upload_item = {
+                            "id": f"{ts_upload}_{upload_id}",
+                            "file": upload_fname,
+                            "url": f"/uploads/{upload_fname}",
+                            "thumb_url": f"/uploads/thumbs/{upload_fname}",
+                            "caption": message or "Shared with Clara",
+                            "note": "Photo Katie shared during conversation",
+                            "tier": "studio",
+                            "visibility": "private",
+                            "uploaded_by": "Katie",
+                            "original_name": upload_fname,
+                            "date": now_upload.strftime("%B %d, %Y"),
+                            "timestamp": int(now_upload.timestamp()),
+                            "size": len(raw_bytes),
+                        }
+                        
+                        items = load_images()
+                        items.append(upload_item)
+                        save_images(items)
+                        
+                        try:
+                            add_image_to_kg(upload_item)
+                        except Exception as e:
+                            print(f"KG sync error (non-fatal): {e}", flush=True)
+                        
+                        print(f"[VISION] Saved Katie's photo: {upload_fname} ({len(raw_bytes)} bytes)", flush=True)
+                    except Exception as e:
+                        print(f"[VISION] Photo save error (non-fatal): {e}", flush=True)
+                
                 # Log user message
                 log_text = message or "(shared a photo)"
                 if image_data:
@@ -1828,6 +1878,29 @@ class ClaraHandler(BaseHTTPRequestHandler):
                                     1
                                 )
                                 print(f"[CHAT-IMAGE] Saved: {fname}", flush=True)
+                                
+                                # Clara sees her own creation — quick vision call
+                                try:
+                                    img_b64 = base64.b64encode(gen_image_bytes).decode("ascii")
+                                    # Only if small enough for vision
+                                    if len(img_b64) < 4_800_000:
+                                        vision_media = "image/webp"
+                                        if ext == ".png": vision_media = "image/png"
+                                        elif ext in (".jpg", ".jpeg"): vision_media = "image/jpeg"
+                                        
+                                        reaction = call_claude(
+                                            f"You just created this image for Katie from the prompt: \"{img_prompt}\". Look at what you made. React naturally and briefly — what do you see? What do you feel about it?",
+                                            image={"base64": img_b64, "media_type": vision_media}
+                                        )
+                                        # Append Clara's reaction after the image
+                                        response = response.replace(
+                                            f"![Clara generated image]({local_url})",
+                                            f"![Clara generated image]({local_url})\n\n{reaction}",
+                                            1
+                                        )
+                                        print(f"[CHAT-IMAGE] Clara saw her own creation", flush=True)
+                                except Exception as ve:
+                                    print(f"[CHAT-IMAGE] Vision self-view error (non-fatal): {ve}", flush=True)
                             except Exception as e:
                                 print(f"[CHAT-IMAGE] Save error: {e}", flush=True)
                                 response = response.replace(
