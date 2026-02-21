@@ -538,35 +538,70 @@
                 alert('Please select an image file.');
                 return;
             }
-            // Max 10MB
-            if (file.size > 10 * 1024 * 1024) {
-                alert('Image must be under 10 MB.');
+            // Max 20MB raw (we'll compress before sending)
+            if (file.size > 20 * 1024 * 1024) {
+                alert('Image must be under 20 MB.');
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const dataUrl = ev.target.result;
-                // Extract base64 and media type
+            // Load image into canvas for resizing/compression
+            const img = new Image();
+            img.onload = () => {
+                // Claude max: 1568px longest side, 5MB base64 (~3.5MB raw target)
+                const MAX_DIM = 1568;
+                const TARGET_BYTES = 3.5 * 1024 * 1024; // 3.5MB raw → ~4.7MB base64
+                let w = img.width, h = img.height;
+
+                // Scale down if needed
+                if (w > MAX_DIM || h > MAX_DIM) {
+                    const scale = MAX_DIM / Math.max(w, h);
+                    w = Math.round(w * scale);
+                    h = Math.round(h * scale);
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+
+                // Try WebP first, fall back to JPEG
+                let quality = 0.85;
+                let dataUrl = canvas.toDataURL('image/webp', quality);
+                let mediaType = 'image/webp';
+
+                // If browser doesn't support WebP toDataURL, it returns PNG
+                if (dataUrl.startsWith('data:image/png')) {
+                    dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    mediaType = 'image/jpeg';
+                }
+
+                // If still too large, reduce quality
+                while (dataUrl.length > TARGET_BYTES * 1.37 && quality > 0.3) {
+                    quality -= 0.1;
+                    dataUrl = canvas.toDataURL(mediaType, quality);
+                }
+
                 const match = dataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
                 if (!match) return;
 
+                const compressedSize = Math.round(match[2].length * 3 / 4); // approx raw bytes
                 pendingImage = {
                     base64: match[2],
                     mediaType: match[1],
                     name: file.name,
                     dataUrl: dataUrl,
-                    size: file.size
+                    size: compressedSize
                 };
 
                 // Show preview
                 previewThumb.src = dataUrl;
                 previewName.textContent = file.name;
-                previewSize.textContent = formatSize(file.size);
+                previewSize.textContent = formatSize(compressedSize) + (compressedSize < file.size ? ' (compressed)' : '');
                 imagePreview.classList.add('show');
                 updateSendBtn();
             };
-            reader.readAsDataURL(file);
+            img.src = URL.createObjectURL(file);
             fileInput.value = ''; // Reset so same file can be re-selected
         });
 

@@ -1724,6 +1724,18 @@ class ClaraHandler(BaseHTTPRequestHandler):
                     self.send_json({"error": "No message or image"}, 400)
                     return
                 
+                # Guard: Claude vision max is 5MB base64 (~3.75MB raw)
+                if image_data and image_data.get("base64"):
+                    b64_len = len(image_data["base64"])
+                    if b64_len > 4_800_000:  # leave margin under 5MB
+                        print(f"[VISION] Image too large: {b64_len} base64 chars (~{b64_len * 3 // 4 // 1024}KB raw)", flush=True)
+                        self.send_json({
+                            "response": "That photo is a bit too large for me to see clearly — could you try a smaller one, or resize it down? I can handle images up to about 4 MB.",
+                            "images": [],
+                            "timestamp": datetime.now().isoformat()
+                        })
+                        return
+                
                 # Log user message
                 log_text = message or "(shared a photo)"
                 if image_data:
