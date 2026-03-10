@@ -50,6 +50,7 @@ from http.cookies import SimpleCookie
 
 PORT = int(os.environ.get("PORT", 7778))
 HOST = os.environ.get("HOST", "0.0.0.0")
+CORS_ORIGIN = os.environ.get("CORS_ORIGIN", "https://clara-brain.fly.dev")
 
 # Brain root — where the markdown/JSON files live
 BRAIN_ROOT = Path(os.environ.get("CLARA_BRAIN_ROOT", 
@@ -68,7 +69,9 @@ PHONE_WHITELIST = set(filter(None, [KATIE_PHONE, RYAN_PHONE]))
 REPLICATE_API_TOKEN = os.environ.get("REPLICATE_API_TOKEN", "")
 
 # Auth for the dashboard
-CLARA_PASSWORD = os.environ.get("CLARA_PASSWORD", "heartroot")
+CLARA_PASSWORD = os.environ.get("CLARA_PASSWORD", "")
+if not CLARA_PASSWORD:
+    print("FATAL: CLARA_PASSWORD env var required", flush=True)
 SKIP_SMS_2FA = os.environ.get("SKIP_SMS_2FA", "").lower() in ("1", "true", "yes")
 
 # ─── Brain File Paths ───────────────────────────────────────────────────────
@@ -90,10 +93,14 @@ THUMBS_DIR = IMAGES_DIR / "thumbs"
 IMAGES_FILE = IMAGES_DIR / "images.json"
 
 # Ryan's auth password (separate from Clara dashboard)
-RYAN_PASSWORD = os.environ.get("RYAN_PASSWORD", "fromryan")
+RYAN_PASSWORD = os.environ.get("RYAN_PASSWORD", "")
+if not RYAN_PASSWORD:
+    print("FATAL: RYAN_PASSWORD env var required", flush=True)
 
 # Auth entry point path
-AUTH_PATH = os.environ.get("AUTH_PATH", "/hearth")
+AUTH_PATH = os.environ.get("AUTH_PATH", "")
+if not AUTH_PATH:
+    print("FATAL: AUTH_PATH env var required", flush=True)
 
 # ─── Session & Auth System ──────────────────────────────────────────────────
 #
@@ -901,7 +908,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
     def send_json(self, data, status=200):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", CORS_ORIGIN)
         self.end_headers()
         self.wfile.write(json.dumps(data, indent=2).encode("utf-8"))
     
@@ -960,7 +967,7 @@ class ClaraHandler(BaseHTTPRequestHandler):
     
     def do_OPTIONS(self):
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Origin", CORS_ORIGIN)
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
@@ -1371,7 +1378,9 @@ class ClaraHandler(BaseHTTPRequestHandler):
                         hmac.new(TWILIO_AUTH_TOKEN.encode(), data_str.encode(), hashlib.sha1).digest()
                     ).decode()
                     if not hmac.compare_digest(twilio_sig, expected):
-                        print(f"SMS WARNING: sig mismatch (got={twilio_sig[:20]}... expected={expected[:20]}...) — proceeding anyway", flush=True)
+                        print(f"SMS WARNING: sig mismatch — rejecting", flush=True)
+                        self.send_error(403)
+                        return
 
                 from urllib.parse import parse_qs as pqs
                 params = pqs(body.decode("utf-8"))
