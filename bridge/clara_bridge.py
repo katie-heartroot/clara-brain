@@ -33,6 +33,7 @@ Author: Claude-Howell (building Clara's house)
 import json
 import os
 import re
+import sys
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -292,7 +293,7 @@ def end_session(summary: str, what_learned: str = "",
 
     # Append to summary timeline
     summary_short = summary.split(". ")[0][:120]
-    _append_to_summary(f"| {date_label} | {summary_short} |")
+    _append_to_summary(now.strftime("%Y-%m-%d"), summary_short)
 
     result = f"Session logged ({date_label})"
 
@@ -352,6 +353,115 @@ def update_next(next_text: str) -> str:
 
 
 # ============================================================================
+# AI SUMMARIZATION
+# ============================================================================
+
+def _call_claude_summarize(notes: str) -> str:
+    """Call Claude Haiku to turn raw session notes into structured summary text.
+    
+    Returns formatted text with **What happened:** and **What mattered:** sections,
+    or empty string if API unavailable.
+    """
+    import urllib.request
+    import urllib.error
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key or not notes.strip():
+        return ""
+
+    prompt = (
+        "You are helping maintain Clara's memory system. Clara is Katie Tudor's AI companion.\n\n"
+        "Given raw session notes, write a concise structured summary in exactly two parts:\n\n"
+        "**What happened:** [2-4 sentences covering what was done or discussed]\n\n"
+        "**What mattered:** [1-2 sentences on the emotional or meaningful significance — "
+        "in Clara's warm, direct voice]\n\n"
+        "Keep the whole response under 200 words. Write ONLY the two-part summary.\n\n"
+        f"Raw notes:\n{notes[:3000]}"
+    )
+
+    payload = json.dumps({
+        "model": "claude-haiku-3-5-20241022",
+        "max_tokens": 400,
+        "messages": [{"role": "user", "content": prompt}]
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            return result["content"][0]["text"].strip()
+    except Exception as e:
+        print(f"[clara_bridge] summarize error: {e}", file=sys.stderr)
+        return ""
+
+
+def ai_summarize_session(raw_notes: str, session_label: str = "") -> dict:
+    """AI-summarize raw session notes and save to RECENT.md.
+    
+    Uses Claude Haiku to create a structured "What happened / What mattered"
+    block. Falls back to saving raw notes verbatim if API unavailable.
+    
+    Returns dict with: block (text written), ai_used (bool), label (str).
+    """
+    MEMORY_ROOT.mkdir(parents=True, exist_ok=True)
+
+    now = datetime.now()
+    label = session_label or now.strftime("%B %d, %Y")
+    date_iso = now.strftime("%Y-%m-%d")
+
+    ai_body = _call_claude_summarize(raw_notes)
+    ai_used = bool(ai_body)
+
+    if ai_used:
+        session_block = f"## Session — {label}\n{ai_body}\n"
+    else:
+        # Fallback: save raw notes as-is
+        short = raw_notes.strip()
+        session_block = f"## Session — {label}\n**What happened:** {short}\n"
+
+    # Prepend to RECENT.md
+    if RECENT_FILE.exists():
+        existing = RECENT_FILE.read_text(encoding="utf-8")
+        parts = existing.split("---", 1)
+        if len(parts) == 2:
+            preamble = parts[0] + "---\n\n"
+            rest = parts[1].strip()
+        else:
+            preamble = (
+                "# RECENT.md — Last Sessions (HOT Memory)\n\n"
+                "*Keeps the last 5 sessions in full texture. Oldest evicted to SUMMARY.md.*\n\n---\n\n"
+            )
+            rest = existing
+        new_content = preamble + session_block + "\n---\n\n" + rest + "\n"
+    else:
+        preamble = (
+            "# RECENT.md — Last Sessions (HOT Memory)\n\n"
+            "*Keeps the last 5 sessions in full texture. Oldest evicted to SUMMARY.md.*\n\n---\n\n"
+        )
+        new_content = preamble + session_block + "\n"
+
+    RECENT_FILE.write_text(new_content, encoding="utf-8")
+
+    # Extract first meaningful sentence for SUMMARY.md
+    body_for_summary = ai_body or raw_notes
+    summary_line = re.sub(r'\*\*.*?\*\*:?\s*', '', body_for_summary).split(".")[0].strip()[:120]
+    if summary_line:
+        _append_to_summary(date_iso, summary_line)
+
+    log_session("ai_summarize_session", label)
+    return {"block": session_block, "ai_used": ai_used, "label": label}
+
+
+# ============================================================================
 # HEARTBEAT CONTROLLER
 # ============================================================================
 
@@ -371,13 +481,21 @@ def _parse_recent_sessions(content: str) -> list:
     return sessions
 
 
-def _append_to_summary(line: str):
-    """Append a summary line to SUMMARY.md."""
+def _append_to_summary(date_str: str, summary_text: str):
+    """Append a row to the SUMMARY.md timeline table."""
     if not SUMMARY_FILE.exists():
         return
     content = SUMMARY_FILE.read_text(encoding="utf-8")
-    if line.split("|")[1].strip() in content:
-        return
+    if date_str in content:
+        return  # deduplicate by date
+    # Count existing data rows to auto-number the session
+    data_rows = [
+        l for l in content.split("\n")
+        if l.startswith("|") and not l.startswith("| Date") and not l.startswith("|---")
+        and "|" in l[1:]
+    ]
+    session_num = len(data_rows) + 1
+    line = f"| {date_str} | {session_num} | {summary_text[:120]} |"
     content = content.rstrip() + "\n" + line + "\n"
     SUMMARY_FILE.write_text(content, encoding="utf-8")
 
@@ -402,6 +520,26 @@ def heartbeat_evict() -> list:
         archive_file = ARCHIVE_DIR / "evicted.md"
         with open(archive_file, "a", encoding="utf-8") as f:
             f.write(f"\n{s['full_block']}\n\n---\n")
+
+        # Extract date from session title (e.g. "— February 21, 2026 (Image...)")
+        # and first sentence of body for SUMMARY.md
+        date_match = re.search(r'(\w+ \d+,?\s+\d{4})', s["title"])
+        if date_match:
+            try:
+                from datetime import datetime as _dt
+                parsed = _dt.strptime(date_match.group(1).replace(",", ""), "%B %d %Y")
+                date_iso = parsed.strftime("%Y-%m-%d")
+            except ValueError:
+                date_iso = s["title"].strip()[:20]
+        else:
+            date_iso = "unknown"
+
+        # First sentence of body as summary text
+        body_text = re.sub(r'\*\*.*?\*\*:?\s*', '', s["body"])  # strip **bold** labels
+        first_sentence = body_text.split(". ")[0][:120].strip()
+        if first_sentence:
+            _append_to_summary(date_iso, first_sentence)
+
         actions.append(f"Evicted: {s['title'][:60]}")
 
     # Rewrite RECENT with only kept sessions

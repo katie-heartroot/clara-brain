@@ -31,7 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from clara_bridge import (
     read_identity, extract_identity_summary, load_knowledge, save_knowledge,
     run_heartbeat, end_session, pin_memory, add_win, update_next,
-    log_session, BRAIN_ROOT, ORIGINS_FILE, IDENTITY_FILES,
+    log_session, ai_summarize_session, BRAIN_ROOT, ORIGINS_FILE, IDENTITY_FILES,
 )
 from datetime import datetime
 
@@ -219,6 +219,18 @@ MCP_TOOLS = [
                 "new_name": {"type": "string", "description": "New entity name"}
             },
             "required": ["old_name", "new_name"]
+        }
+    },
+    {
+        "name": "clara_summarize_session",
+        "description": "AI-summarize raw session notes using Claude Haiku, then save the structured result to RECENT.md and the timeline index. Use this when you have unstructured notes and want Clara's memory updated with a proper 'What happened / What mattered' format.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "notes": {"type": "string", "description": "Raw session notes or transcript to summarize"},
+                "label": {"type": "string", "description": "Optional label for the session (e.g. 'Session 13 — April 7, 2026')"}
+            },
+            "required": ["notes"]
         }
     },
 ]
@@ -456,6 +468,20 @@ def _tool_rename_entity(args):
     return {"result": f"Renamed '{old_name}' → '{new_name}'"}
 
 
+def _tool_summarize_session(args):
+    notes = args.get("notes", "").strip()
+    if not notes:
+        return {"error": "notes is required"}
+    label = args.get("label", "")
+    result = ai_summarize_session(notes, session_label=label)
+    return {
+        "result": f"Session summarized ({'AI' if result['ai_used'] else 'fallback'}) and saved",
+        "label": result["label"],
+        "ai_used": result["ai_used"],
+        "block": result["block"],
+    }
+
+
 # ── Tool Dispatcher ──────────────────────────────────────────────────────────
 
 _TOOL_MAP = {
@@ -474,6 +500,7 @@ _TOOL_MAP = {
     "clara_delete_relation": _tool_delete_relation,
     "clara_merge_entities": _tool_merge_entities,
     "clara_rename_entity": _tool_rename_entity,
+    "clara_summarize_session": _tool_summarize_session,
 }
 
 
